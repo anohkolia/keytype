@@ -7,12 +7,12 @@ import App from './App.vue'
 import router from './router'
 
 // Activer les transitions après le chargement de la page
-window.addEventListener('load', () => {
-  document.documentElement.classList.remove('no-transitions')
+window.addEventListener('DOMContentLoaded', () => {
+  // Petit délai pour s'assurer que tout est rendu
+  setTimeout(() => {
+    document.documentElement.classList.remove('no-transitions')
+  }, 100)
 })
-
-// Permettre aux transitions de fonctionner correctement quand la page se charge
-document.documentElement.classList.add('no-transitions')
 
 const app = createApp(App)
 

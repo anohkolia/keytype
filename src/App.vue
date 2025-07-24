@@ -12,12 +12,11 @@ const darkMode = ref<boolean>(savedDarkMode.value)
 // Fonction pour basculer entre le mode clair et sombre
 const toggleDarkMode = () => {
   darkMode.value = !darkMode.value
-  applyTheme()
 }
 
 // Appliquer le thème sur le document
-const applyTheme = () => {
-  if (darkMode.value) {
+const applyTheme = (isDark: boolean) => {
+  if (isDark) {
     document.documentElement.classList.add('dark')
   } else {
     document.documentElement.classList.remove('dark')
@@ -27,7 +26,7 @@ const applyTheme = () => {
 // Observer les changements de préférence système
 onMounted(() => {
   // Appliquer le thème initial
-  applyTheme()
+  applyTheme(darkMode.value)
 
   // Écouter les changements de préférence système
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -35,14 +34,18 @@ onMounted(() => {
     // Ne changer automatiquement que si l'utilisateur n'a pas défini sa préférence manuellement
     if (localStorage.getItem('keytype-darkmode-user-preference') !== 'true') {
       darkMode.value = e.matches
-      applyTheme()
     }
   })
 })
 
-// Sauvegarder la préférence utilisateur quand elle change
+// Sauvegarder la préférence utilisateur quand elle change et appliquer le thème
 watch(darkMode, (newValue) => {
+  // Appliquer immédiatement le thème
+  applyTheme(newValue)
+
+  // Sauvegarder la préférence
   savedDarkMode.value = newValue
+
   // Marquer que l'utilisateur a défini manuellement sa préférence
   localStorage.setItem('keytype-darkmode-user-preference', 'true')
 })
