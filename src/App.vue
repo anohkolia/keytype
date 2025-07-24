@@ -1,13 +1,51 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import KeyTypeGame from './components/KeyTypeGame.vue'
+import { useLocalStorage } from './composables/useLocalStorage'
 
-const darkMode = ref(window.matchMedia('(prefers-color-scheme: dark)').matches)
+// Utiliser localStorage pour sauvegarder la préférence de thème
+const { value: savedDarkMode } = useLocalStorage<boolean>('keytype-darkmode',
+  window.matchMedia('(prefers-color-scheme: dark)').matches)
 
+const darkMode = ref<boolean>(savedDarkMode.value)
+
+// Fonction pour basculer entre le mode clair et sombre
 const toggleDarkMode = () => {
   darkMode.value = !darkMode.value
-  document.body.classList.toggle('dark', darkMode.value)
+  applyTheme()
 }
+
+// Appliquer le thème sur le document
+const applyTheme = () => {
+  if (darkMode.value) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
+
+// Observer les changements de préférence système
+onMounted(() => {
+  // Appliquer le thème initial
+  applyTheme()
+
+  // Écouter les changements de préférence système
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+  mediaQuery.addEventListener('change', (e) => {
+    // Ne changer automatiquement que si l'utilisateur n'a pas défini sa préférence manuellement
+    if (localStorage.getItem('keytype-darkmode-user-preference') !== 'true') {
+      darkMode.value = e.matches
+      applyTheme()
+    }
+  })
+})
+
+// Sauvegarder la préférence utilisateur quand elle change
+watch(darkMode, (newValue) => {
+  savedDarkMode.value = newValue
+  // Marquer que l'utilisateur a défini manuellement sa préférence
+  localStorage.setItem('keytype-darkmode-user-preference', 'true')
+})
 </script>
 
 <template>

@@ -2,10 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-@media (prefers-color-scheme: dark) {
-  body {
-    @apply bg-gray-900 text-white;
-  }
+:root {
+  --color-text: #111827;
+  --color-background: #ffffff;
+  --color-primary: #3b82f6;
+  --color-accent: #60a5fa;
+}
+
+html.dark {
+  --color-text: #f3f4f6;
+  --color-background: #111827;
+  --color-primary: #60a5fa;
+  --color-accent: #3b82f6;
 }
 
 body {
@@ -14,5 +22,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
   padding: 0;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+/* Prevent transition flashes when page loads */
+.no-transitions * {
+  transition: none !important;
 }
