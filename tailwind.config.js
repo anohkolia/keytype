@@ -4,7 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
-  darkMode: 'class', // or 'media' pour utiliser les préférences système
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -17,4 +17,9 @@ export default {
     },
   },
   plugins: [],
+  safelist: [
+    'dark',
+    'bg-gray-900',
+    'text-white'
+  ]
 }

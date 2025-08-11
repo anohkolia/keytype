@@ -1,53 +1,40 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import KeyTypeGame from './components/KeyTypeGame.vue'
-import { useLocalStorage } from './composables/useLocalStorage'
 
-// Utiliser localStorage pour sauvegarder la préférence de thème
-const { value: savedDarkMode } = useLocalStorage<boolean>('keytype-darkmode',
-  window.matchMedia('(prefers-color-scheme: dark)').matches)
+// Initialiser avec la préférence système ou stockée
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+const storedTheme = localStorage.getItem('theme')
 
-const darkMode = ref<boolean>(savedDarkMode.value)
+// Si une préférence est stockée, l'utiliser, sinon utiliser la préférence système
+let initialDarkMode = prefersDark
+if (storedTheme === 'dark') initialDarkMode = true
+if (storedTheme === 'light') initialDarkMode = false
 
-// Fonction pour basculer entre le mode clair et sombre
+// État du thème
+const darkMode = ref(initialDarkMode)
+
+// Fonction simple pour basculer le thème
 const toggleDarkMode = () => {
   darkMode.value = !darkMode.value
+
+  // Mettre à jour le DOM et localStorage immédiatement
+  if (darkMode.value) {
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('theme', 'dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem('theme', 'light')
+  }
 }
 
-// Appliquer le thème sur le document
-const applyTheme = (isDark: boolean) => {
-  if (isDark) {
+// Appliquer le thème initial au chargement
+onMounted(() => {
+  if (darkMode.value) {
     document.documentElement.classList.add('dark')
   } else {
     document.documentElement.classList.remove('dark')
   }
-}
-
-// Observer les changements de préférence système
-onMounted(() => {
-  // Appliquer le thème initial
-  applyTheme(darkMode.value)
-
-  // Écouter les changements de préférence système
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-  mediaQuery.addEventListener('change', (e) => {
-    // Ne changer automatiquement que si l'utilisateur n'a pas défini sa préférence manuellement
-    if (localStorage.getItem('keytype-darkmode-user-preference') !== 'true') {
-      darkMode.value = e.matches
-    }
-  })
-})
-
-// Sauvegarder la préférence utilisateur quand elle change et appliquer le thème
-watch(darkMode, (newValue) => {
-  // Appliquer immédiatement le thème
-  applyTheme(newValue)
-
-  // Sauvegarder la préférence
-  savedDarkMode.value = newValue
-
-  // Marquer que l'utilisateur a défini manuellement sa préférence
-  localStorage.setItem('keytype-darkmode-user-preference', 'true')
 })
 </script>
 

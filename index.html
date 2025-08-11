@@ -16,13 +16,17 @@
       // Script pour éviter le flash de thème incorrect au chargement
       (function() {
         try {
-          const darkModeSaved = localStorage.getItem('keytype-darkmode');
-          const isDarkMode = darkModeSaved ? JSON.parse(darkModeSaved) : window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (isDarkMode) {
+          const storedTheme = localStorage.getItem('theme');
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+          // Appliquer le thème selon les préférences
+          if (storedTheme === 'dark' || (storedTheme === null && prefersDark)) {
             document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
           }
         } catch (e) {
-          // En cas d'erreur, ne rien faire
+          console.error('Erreur lors de l\'initialisation du thème:', e);
         }
       })();
     </script>
