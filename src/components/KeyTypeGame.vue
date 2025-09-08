@@ -281,115 +281,231 @@ watch(bestTime, (newTime) => {
 })
 
 onMounted(initGame)
+
+// Fonction pour empêcher le copier-coller
+const handlePaste = (event: ClipboardEvent) => {
+  event.preventDefault()
+  // Feedback visuel pour indiquer que le collage est bloqué
+  const input = event.target as HTMLInputElement
+  input.classList.add('shake-animation')
+  setTimeout(() => {
+    input.classList.remove('shake-animation')
+  }, 500)
+}
+
+const handleCopy = (event: ClipboardEvent) => {
+  event.preventDefault()
+}
+
+const handleCut = (event: ClipboardEvent) => {
+  event.preventDefault()
+}
+
+// Fonction pour empêcher le glisser-déposer de texte
+const handleDragOver = (event: DragEvent) => {
+  event.preventDefault()
+}
+
+const handleDrop = (event: DragEvent) => {
+  event.preventDefault()
+  // Feedback visuel
+  const input = event.target as HTMLInputElement
+  input.classList.add('shake-animation')
+  setTimeout(() => {
+    input.classList.remove('shake-animation')
+  }, 500)
+}
+
+// Protection contre le clic droit (menu contextuel)
+const handleContextMenu = (event: MouseEvent) => {
+  event.preventDefault()
+}
+
+// Protection contre les raccourcis clavier (Ctrl+C, Ctrl+V, etc.)
+const handleKeyDown = (event: KeyboardEvent) => {
+  const ctrlKey = event.ctrlKey || event.metaKey // Pour Mac (Cmd)
+
+  // Bloquer Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A (sélection totale)
+  if (ctrlKey && ['c', 'v', 'x', 'a'].includes(event.key)) {
+    event.preventDefault()
+
+    // Feedback visuel pour Ctrl+V
+    if (event.key === 'v') {
+      const input = event.target as HTMLInputElement
+      input.classList.add('shake-animation')
+      setTimeout(() => {
+        input.classList.remove('shake-animation')
+      }, 500)
+    }
+  }
+
+  // Bloquer le menu contextuel avec Shift+F10 ou Menu key
+  if (event.key === 'F10' && event.shiftKey || event.key === 'ContextMenu') {
+    event.preventDefault()
+  }
+}
+
+// Réinitialiser le champ si tentative de triche détectée
+watch(userInput, (newValue) => {
+  // Détecter si l'utilisateur essaie de coller un long texte
+  if (newValue.length > currentText.value.length) {
+    userInput.value = newValue.slice(0, currentText.value.length)
+
+    // Feedback visuel
+    const input = document.querySelector('input') as HTMLInputElement
+    if (input) {
+      input.classList.add('shake-animation')
+      setTimeout(() => {
+        input.classList.remove('shake-animation')
+      }, 500)
+    }
+  }
+})
+
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 py-8 px-4">
-    <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md p-6">
-      <h1 class="text-2xl font-bold text-gray-800 text-center mb-6">{{ t.title }}</h1>
-
-      <div class="flex justify-center gap-4 mb-6">
-        <button
-          @click="changeLanguage('french')"
-          :class="['px-4 py-2 rounded transition-colors', language === 'french' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700']"
-        >
-          Français
-        </button>
-        <button
-          @click="changeLanguage('english')"
-          :class="['px-4 py-2 rounded transition-colors', language === 'english' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700']"
-        >
-          English
-        </button>
+  <div class="max-w-4xl mx-auto">
+    <!-- Cartes de statistiques -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="fas fa-trophy text-blue-500"></i>
+          <div class="text-sm text-gray-500">{{ t.score }}</div>
+        </div>
+        <div class="text-2xl font-bold text-blue-600">{{ score }}</div>
       </div>
 
-      <!-- Mode défi -->
-      <div v-if="challengeMode" class="mb-6 p-4 bg-yellow-100 rounded-lg">
-        <div class="flex justify-between items-center">
-          <div>
-            <h3 class="font-semibold text-yellow-800">{{ t.challenge }}</h3>
-            <p class="text-sm text-yellow-700">{{ t.challengeDescription }}</p>
-          </div>
-          <div class="text-2xl font-bold text-yellow-800">{{ challengeTimeLeft }}s</div>
+      <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="fas fa-bullseye text-green-500"></i>
+          <div class="text-sm text-gray-500">{{ t.accuracy }}</div>
+        </div>
+        <div class="text-2xl font-bold text-green-600">{{ accuracy }}%</div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="fas fa-clock text-purple-500"></i>
+          <div class="text-sm text-gray-500">{{ t.time }}</div>
+        </div>
+        <div class="text-2xl font-bold text-purple-600">{{ elapsedTime }}s</div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="fas fa-star text-amber-500"></i>
+          <div class="text-sm text-gray-500">{{ challengeMode ? t.bestTime : t.highScore }}</div>
+        </div>
+        <div class="text-2xl font-bold text-amber-600">{{ challengeMode ? bestTime : highScore }}</div>
+      </div>
+    </div>
+
+    <!-- Zone de texte -->
+    <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 mb-6 relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+      <p class="text-lg font-mono leading-relaxed text-gray-800 mb-4 min-h-20">
+        <span
+          v-for="(char, index) in currentText"
+          :key="index"
+          :class="{
+            'text-green-500': index < userInput.length && userInput[index] === char,
+            'text-red-500 bg-red-50': index < userInput.length && userInput[index] !== char,
+            'text-gray-400': index >= userInput.length,
+            'animate-gentle-pulse bg-blue-50': index === userInput.length
+          }"
+          class="transition-all duration-100"
+        >{{ char }}</span>
+      </p>
+
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-500">
+          Tapez le texte ci-dessus
+        </div>
+        <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+          {{ wpm > 0 ? wpm + ' MPM' : 'En attente...' }}
         </div>
       </div>
+    </div>
 
-      <div class="bg-gray-100 p-4 rounded-lg mb-4 min-h-20 relative">
-        <p class="text-lg font-mono leading-relaxed">
-          <span
-            v-for="(char, index) in currentText"
-            :key="index"
-            :class="{
-              'text-green-600': index < userInput.length && userInput[index] === char,
-              'text-red-600 bg-red-100': index < userInput.length && userInput[index] !== char,
-              'text-black': index >= userInput.length,
-              'animate-pulse': index === userInput.length
-            }"
-          >{{ char }}</span>
-        </p>
+    <!-- Champ de saisie -->
+    <div class="relative mb-8">
+    <input
+      v-model="userInput"
+      @input="checkInput"
+      @paste="handlePaste"
+      @copy="handleCopy"
+      @cut="handleCut"
+      @dragover="handleDragOver"
+      @drop="handleDrop"
+      @contextmenu="handleContextMenu"
+      @keydown="handleKeyDown"
+      class="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-gray-400 no-copy-paste"
+      :placeholder="t.startTyping"
+      :disabled="challengeMode && challengeTimeLeft <= 0"
+      autofocus
+      autocapitalize="off"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+      maxlength="1000"
+    />
+    <div class="absolute inset-y-0 right-0 flex items-center pr-4">
+      <div class="w-3 h-3 rounded-full" :class="{
+        'bg-green-400': userInput.length > 0 && userInput === currentText.slice(0, userInput.length),
+        'bg-red-400': userInput.length > 0 && userInput !== currentText.slice(0, userInput.length),
+        'bg-gray-300': userInput.length === 0
+      }"></div>
+    </div>
+  </div>
+
+    <!-- Boutons d'action -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <button
+        @click="resetGame"
+        class="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:shadow-md transition-all font-medium"
+      >
+        <i class="fas fa-redo-alt"></i>
+        {{ t.reset }}
+      </button>
+
+      <button
+        v-if="!challengeMode"
+        @click="startChallenge"
+        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium"
+      >
+        <i class="fas fa-stopwatch"></i>
+        {{ t.startChallenge }}
+      </button>
+
+      <button
+        @click="shareScore"
+        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium"
+      >
+        <i class="fas fa-share-alt"></i>
+        {{ t.share }}
+      </button>
+    </div>
+
+    <!-- Barre de progression en mode défi -->
+    <div v-if="challengeMode" class="mt-8 bg-white rounded-xl p-5 shadow-lg border border-gray-100">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-fire text-orange-500"></i>
+          <h3 class="font-semibold text-gray-800">{{ t.challenge }}</h3>
+        </div>
+        <span class="text-2xl font-bold text-amber-600">{{ challengeTimeLeft }}s</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
         <div
-          v-if="startTime"
-          class="absolute top-2 right-2 text-sm bg-blue-100 px-2 py-1 rounded-full font-mono text-blue-800"
-        >
-          {{ wpm > 0 ? wpm + ' WPM' : '...' }}
-        </div>
+          class="bg-gradient-to-r from-amber-400 to-orange-500 h-2 rounded-full transition-all duration-1000 ease-out"
+          :style="{ width: `${(challengeTimeLeft / 60) * 100}%` }"
+        ></div>
       </div>
-
-      <input
-        v-model="userInput"
-        @input="checkInput"
-        class="w-full p-3 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        :placeholder="t.startTyping"
-        :disabled="challengeMode && challengeTimeLeft <= 0"
-        autofocus
-      />
-
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div class="bg-blue-50 p-3 rounded-lg text-center">
-          <div class="text-sm text-gray-600">{{ t.score }}</div>
-          <div class="text-2xl font-bold text-blue-600">{{ score }}</div>
-        </div>
-        <div class="bg-green-50 p-3 rounded-lg text-center">
-          <div class="text-sm text-gray-600">{{ t.accuracy }}</div>
-          <div class="text-2xl font-bold text-green-600">{{ accuracy }}%</div>
-        </div>
-        <div class="bg-purple-50 p-3 rounded-lg text-center">
-          <div class="text-sm text-gray-600">{{ t.time }}</div>
-          <div class="text-2xl font-bold text-purple-600">{{ elapsedTime }}s</div>
-        </div>
-        <div class="bg-amber-50 p-3 rounded-lg text-center">
-          <div class="text-sm text-gray-600">{{ challengeMode ? t.bestTime : t.highScore }}</div>
-          <div class="text-2xl font-bold text-amber-600">{{ challengeMode ? bestTime : highScore }}</div>
-        </div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div class="flex gap-2">
-          <button
-            @click="resetGame"
-            class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors text-sm"
-          >
-            {{ t.reset }}
-          </button>
-          <button
-            v-if="!challengeMode"
-            @click="startChallenge"
-            class="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors text-sm"
-          >
-            {{ t.startChallenge }}
-          </button>
-        </div>
-
-        <button
-          @click="shareScore"
-          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm flex items-center gap-1"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-          </svg>
-          {{ t.share }}
-        </button>
-      </div>
+      <p class="text-sm text-gray-600 mt-2 flex items-center gap-1">
+        <i class="fas fa-info-circle text-blue-400"></i>
+        {{ t.challengeDescription }}
+      </p>
     </div>
   </div>
 </template>
@@ -406,5 +522,35 @@ onMounted(initGame)
   50% {
     opacity: 0.5;
   }
+}
+
+/* Animation shake pour le feedback visuel */
+.shake-animation {
+  animation: shake 0.5s ease-in-out;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Désactiver la sélection de texte dans le champ */
+.no-copy-paste {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Style pour indiquer que le champ est protégé */
+.no-copy-paste::selection {
+  background: transparent;
+}
+
+.no-copy-paste::-moz-selection {
+  background: transparent;
 }
 </style>
