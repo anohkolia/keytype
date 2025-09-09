@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useLocalStorage } from '@/composables/useLocalStorage'
 
 type Language = 'french' | 'english'
@@ -58,31 +58,21 @@ const translations: Record<Language, Translation> = {
   }
 }
 
-// Phrases d'exemple
-const TEXTS = {
+// Phrases de fallback au cas où l'API échoue
+const FALLBACK_TEXTS = {
   french: [
     "Le chat dort sur le canapé.",
     "JavaScript est un langage puissant.",
     "Paris est la capitale de la France.",
-    "Les montagnes sont magnifiques en automne.",
-    "La programmation est une compétence utile.",
-    "Le soleil brille intensément aujourd'hui.",
-    "Les développeurs aiment résoudre des problèmes complexes.",
-    "La pratique régulière améliore la vitesse de frappe.",
-    "Vue.js est un framework JavaScript progressif.",
-    "TypeScript offre un typage statique optionnel."
+    "La pratique rend parfait.",
+    "Vue.js est un framework progressif."
   ],
   english: [
     "The quick brown fox jumps over the lazy dog.",
     "TypeScript improves code quality.",
+    "Practice makes perfect.",
     "London is the capital of England.",
-    "Programming is both an art and a science.",
-    "Practice makes perfect when learning to type.",
-    "The weather is beautiful this time of year.",
-    "Developers enjoy solving complex problems.",
-    "Regular practice improves typing speed significantly.",
-    "Vue.js is a progressive JavaScript framework.",
-    "TypeScript provides optional static typing."
+    "Programming is an art and a science."
   ]
 }
 
@@ -95,7 +85,7 @@ const { value: scores } = useLocalStorage<Score[]>('typing-scores', [])
 const language = ref<Language>(savedLanguage.value)
 const highScore = ref<number>(savedHighScore.value)
 const bestTime = ref<number>(savedBestTime.value)
-const currentText = ref('')
+const currentText = ref('Chargement...')
 const userInput = ref('')
 const score = ref(0)
 const startTime = ref<number | null>(null)
@@ -105,11 +95,44 @@ const totalKeystrokes = ref(0)
 const challengeMode = ref(false)
 const challengeTimeLeft = ref(0)
 const challengeTimer = ref<number | null>(null)
+const isLoading = ref(false)
 
-// Sélectionne un texte aléatoire
-const getRandomText = () => {
-  const texts = TEXTS[language.value]
-  return texts[Math.floor(Math.random() * texts.length)]
+// Fonction pour obtenir une citation aléatoire
+const fetchRandomText = async (): Promise<string> => {
+  isLoading.value = true
+
+  try {
+    const langCode = language.value === 'french' ? 'fr' : 'en'
+
+    // Option 1: Quotable (anglais seulement)
+    if (langCode === 'en') {
+      const response = await fetch('https://api.quotable.io/random?maxLength=120')
+      const data = await response.json()
+      return data.content
+    }
+
+    // Option 2: Citation française (fallback car peu d'APIs françaises gratuites)
+    const response = await fetch('https://jsonplaceholder.typicode.com/posts/' + Math.floor(Math.random() * 100))
+    const data = await response.json()
+    return data.body?.split('\n')[0]?.substring(0, 120) || FALLBACK_TEXTS.french[Math.floor(Math.random() * FALLBACK_TEXTS.french.length)]
+
+  } catch (error) {
+    console.warn('API unavailable, using fallback texts:', error)
+    const texts = language.value === 'french' ? FALLBACK_TEXTS.french : FALLBACK_TEXTS.english
+    return texts[Math.floor(Math.random() * texts.length)]
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Initialisation du jeu
+const initGame = async () => {
+  currentText.value = await fetchRandomText()
+  userInput.value = ''
+  startTime.value = Date.now()
+  errors.value = 0
+  totalKeystrokes.value = 0
+  wpm.value = 0
 }
 
 // Calcul de précision
@@ -127,14 +150,12 @@ const elapsedTime = computed(() => {
 // Traductions actuelles selon la langue
 const t = computed(() => translations[language.value])
 
-// Initialisation
-const initGame = () => {
-  currentText.value = getRandomText()
-  userInput.value = ''
-  startTime.value = Date.now()
-  errors.value = 0
-  totalKeystrokes.value = 0
-  wpm.value = 0
+// Calcul des mots par minute (WPM)
+const calculateWPM = () => {
+  if (!startTime.value) return 0
+  const timeElapsed = (Date.now() - startTime.value) / 60000 // en minutes
+  const words = userInput.value.trim().split(/\s+/).length
+  return Math.round(words / timeElapsed)
 }
 
 // Démarrer le défi
@@ -172,14 +193,6 @@ const endChallenge = () => {
   }
 }
 
-// Calcul des mots par minute (WPM)
-const calculateWPM = () => {
-  if (!startTime.value) return 0
-  const timeElapsed = (Date.now() - startTime.value) / 60000 // en minutes
-  const words = userInput.value.trim().split(/\s+/).length
-  return Math.round(words / timeElapsed)
-}
-
 // Réinitialisation du jeu
 const resetGame = () => {
   if (challengeMode.value) {
@@ -208,29 +221,37 @@ const checkInput = () => {
 
   // Vérifie si l'utilisateur a terminé correctement le texte
   if (userInput.value === currentText.value) {
-  wpm.value = calculateWPM()
-  score.value++
+    wpm.value = calculateWPM()
+    score.value++
 
-  // Mise à jour du meilleur score
-  if (score.value > highScore.value) {
-    highScore.value = score.value
+    // Mise à jour du meilleur score
+    if (score.value > highScore.value) {
+      highScore.value = score.value
+    }
+
+    // Sauvegarder le score
+    saveScore({
+      wpm: wpm.value,
+      accuracy: accuracy.value,
+      mode: challengeMode.value ? 'challenge' : 'normal'
+    })
+
+    initGame()
   }
-
-  // SAUVEGARDER LE SCORE (ajouter cette ligne)
-  saveScore({
-    wpm: wpm.value,
-    accuracy: accuracy.value,
-    mode: challengeMode.value ? 'challenge' : 'normal'
-  })
-
-  initGame()
 }
+
+// Sauvegarder un score
+const saveScore = (newScore: Omit<Score, 'date'>) => {
+  scores.value = [
+    ...scores.value,
+    { ...newScore, date: new Date().toISOString() }
+  ].sort((a, b) => b.wpm - a.wpm).slice(0, 10) // Garder les 10 meilleurs
 }
 
 // Changement de langue
-const changeLanguage = (lang: Language) => {
+const changeLanguage = async (lang: Language) => {
   language.value = lang
-  initGame()
+  await initGame()
 }
 
 // Partager le score
@@ -252,22 +273,62 @@ const shareScore = () => {
   }
 }
 
-const saveScore = (newScore: Omit<Score, 'date'>) => {
-  scores.value = [
-    ...scores.value,
-    { ...newScore, date: new Date().toISOString() }
-  ].sort((a, b) => b.wpm - a.wpm).slice(0, 10) // Garder les 10 meilleurs
-}
-
 // Méthode de partage alternative
 const fallbackShare = (text: string) => {
-  // Copie dans le presse-papier
   navigator.clipboard.writeText(text)
     .then(() => alert('Score copié dans le presse-papier!'))
     .catch(() => alert(text))
 }
 
-// Observateurs pour sauvegarder les préférences
+// Fonctions de protection contre la triche
+const handlePaste = (event: ClipboardEvent) => {
+  event.preventDefault()
+  const input = event.target as HTMLInputElement
+  input.classList.add('shake-animation')
+  setTimeout(() => input.classList.remove('shake-animation'), 500)
+}
+
+const handleCopy = (event: ClipboardEvent) => {
+  event.preventDefault()
+}
+
+const handleCut = (event: ClipboardEvent) => {
+  event.preventDefault()
+}
+
+const handleDragOver = (event: DragEvent) => {
+  event.preventDefault()
+}
+
+const handleDrop = (event: DragEvent) => {
+  event.preventDefault()
+  const input = event.target as HTMLInputElement
+  input.classList.add('shake-animation')
+  setTimeout(() => input.classList.remove('shake-animation'), 500)
+}
+
+const handleContextMenu = (event: MouseEvent) => {
+  event.preventDefault()
+}
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  const ctrlKey = event.ctrlKey || event.metaKey
+
+  if (ctrlKey && ['c', 'v', 'x', 'a'].includes(event.key)) {
+    event.preventDefault()
+    if (event.key === 'v') {
+      const input = event.target as HTMLInputElement
+      input.classList.add('shake-animation')
+      setTimeout(() => input.classList.remove('shake-animation'), 500)
+    }
+  }
+
+  if (event.key === 'F10' && event.shiftKey || event.key === 'ContextMenu') {
+    event.preventDefault()
+  }
+}
+
+// Observateurs
 watch(language, (newLang) => {
   savedLanguage.value = newLang
 })
@@ -280,88 +341,18 @@ watch(bestTime, (newTime) => {
   savedBestTime.value = newTime
 })
 
-onMounted(initGame)
-
-// Fonction pour empêcher le copier-coller
-const handlePaste = (event: ClipboardEvent) => {
-  event.preventDefault()
-  // Feedback visuel pour indiquer que le collage est bloqué
-  const input = event.target as HTMLInputElement
-  input.classList.add('shake-animation')
-  setTimeout(() => {
-    input.classList.remove('shake-animation')
-  }, 500)
-}
-
-const handleCopy = (event: ClipboardEvent) => {
-  event.preventDefault()
-}
-
-const handleCut = (event: ClipboardEvent) => {
-  event.preventDefault()
-}
-
-// Fonction pour empêcher le glisser-déposer de texte
-const handleDragOver = (event: DragEvent) => {
-  event.preventDefault()
-}
-
-const handleDrop = (event: DragEvent) => {
-  event.preventDefault()
-  // Feedback visuel
-  const input = event.target as HTMLInputElement
-  input.classList.add('shake-animation')
-  setTimeout(() => {
-    input.classList.remove('shake-animation')
-  }, 500)
-}
-
-// Protection contre le clic droit (menu contextuel)
-const handleContextMenu = (event: MouseEvent) => {
-  event.preventDefault()
-}
-
-// Protection contre les raccourcis clavier (Ctrl+C, Ctrl+V, etc.)
-const handleKeyDown = (event: KeyboardEvent) => {
-  const ctrlKey = event.ctrlKey || event.metaKey // Pour Mac (Cmd)
-
-  // Bloquer Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A (sélection totale)
-  if (ctrlKey && ['c', 'v', 'x', 'a'].includes(event.key)) {
-    event.preventDefault()
-
-    // Feedback visuel pour Ctrl+V
-    if (event.key === 'v') {
-      const input = event.target as HTMLInputElement
-      input.classList.add('shake-animation')
-      setTimeout(() => {
-        input.classList.remove('shake-animation')
-      }, 500)
-    }
-  }
-
-  // Bloquer le menu contextuel avec Shift+F10 ou Menu key
-  if (event.key === 'F10' && event.shiftKey || event.key === 'ContextMenu') {
-    event.preventDefault()
-  }
-}
-
-// Réinitialiser le champ si tentative de triche détectée
 watch(userInput, (newValue) => {
-  // Détecter si l'utilisateur essaie de coller un long texte
   if (newValue.length > currentText.value.length) {
     userInput.value = newValue.slice(0, currentText.value.length)
-
-    // Feedback visuel
-    const input = document.querySelector('input') as HTMLInputElement
+    const input = document.querySelector('input')
     if (input) {
       input.classList.add('shake-animation')
-      setTimeout(() => {
-        input.classList.remove('shake-animation')
-      }, 500)
+      setTimeout(() => input.classList.remove('shake-animation'), 500)
     }
   }
 })
 
+onMounted(initGame)
 </script>
 
 <template>
@@ -404,84 +395,62 @@ watch(userInput, (newValue) => {
     <!-- Zone de texte -->
     <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 mb-6 relative overflow-hidden">
       <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
-      <p class="text-lg font-mono leading-relaxed text-gray-800 mb-4 min-h-20">
-        <span
-          v-for="(char, index) in currentText"
-          :key="index"
-          :class="{
-            'text-green-500': index < userInput.length && userInput[index] === char,
-            'text-red-500 bg-red-50': index < userInput.length && userInput[index] !== char,
-            'text-gray-400': index >= userInput.length,
-            'animate-gentle-pulse bg-blue-50': index === userInput.length
-          }"
-          class="transition-all duration-100"
-        >{{ char }}</span>
+
+      <div v-if="isLoading" class="flex items-center justify-center min-h-20">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+
+      <p v-else class="text-lg font-mono leading-relaxed text-gray-800 mb-4 min-h-20">
+        <span v-for="(char, index) in currentText" :key="index" :class="{
+          'text-green-500': index < userInput.length && userInput[index] === char,
+          'text-red-500 bg-red-50': index < userInput.length && userInput[index] !== char,
+          'text-gray-400': index >= userInput.length,
+          'animate-gentle-pulse bg-blue-50': index === userInput.length
+        }" class="transition-all duration-100">{{ char }}</span>
       </p>
 
       <div class="flex items-center justify-between">
         <div class="text-sm text-gray-500">
-          Tapez le texte ci-dessus
+          {{ isLoading ? 'Chargement...' : 'Tapez le texte ci-dessus' }}
         </div>
         <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-          {{ wpm > 0 ? wpm + ' MPM' : 'En attente...' }}
+          {{ wpm > 0 ? wpm + ' MPM' : 'Prêt' }}
         </div>
       </div>
     </div>
 
     <!-- Champ de saisie -->
     <div class="relative mb-8">
-    <input
-      v-model="userInput"
-      @input="checkInput"
-      @paste="handlePaste"
-      @copy="handleCopy"
-      @cut="handleCut"
-      @dragover="handleDragOver"
-      @drop="handleDrop"
-      @contextmenu="handleContextMenu"
-      @keydown="handleKeyDown"
-      class="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-gray-400 no-copy-paste"
-      :placeholder="t.startTyping"
-      :disabled="challengeMode && challengeTimeLeft <= 0"
-      autofocus
-      autocapitalize="off"
-      autocomplete="off"
-      autocorrect="off"
-      spellcheck="false"
-      maxlength="1000"
-    />
-    <div class="absolute inset-y-0 right-0 flex items-center pr-4">
-      <div class="w-3 h-3 rounded-full" :class="{
+      <input v-model="userInput" @input="checkInput" @paste="handlePaste" @copy="handleCopy" @cut="handleCut"
+        @dragover="handleDragOver" @drop="handleDrop" @contextmenu="handleContextMenu" @keydown="handleKeyDown"
+        class="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-gray-400 no-copy-paste"
+        :placeholder="t.startTyping" :disabled="challengeMode && challengeTimeLeft <= 0" autofocus autocapitalize="off"
+        autocomplete="off" autocorrect="off" spellcheck="false" maxlength="1000" />
+      <div class="absolute inset-y-0 right-0 flex items-center pr-4">
+        <div class="w-3 h-3 rounded-full" :class="{
         'bg-green-400': userInput.length > 0 && userInput === currentText.slice(0, userInput.length),
         'bg-red-400': userInput.length > 0 && userInput !== currentText.slice(0, userInput.length),
         'bg-gray-300': userInput.length === 0
       }"></div>
+      </div>
     </div>
-  </div>
 
     <!-- Boutons d'action -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <button
-        @click="resetGame"
-        class="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:shadow-md transition-all font-medium"
-      >
+      <button @click="resetGame"
+        class="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:shadow-md transition-all font-medium">
         <i class="fas fa-redo-alt"></i>
         {{ t.reset }}
       </button>
 
-      <button
-        v-if="!challengeMode"
-        @click="startChallenge"
-        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium"
-      >
+      <button v-if="!challengeMode" @click="startChallenge"
+        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium">
         <i class="fas fa-stopwatch"></i>
         {{ t.startChallenge }}
       </button>
 
-      <button
-        @click="shareScore"
-        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium"
-      >
+      <button @click="shareScore"
+        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium">
         <i class="fas fa-share-alt"></i>
         {{ t.share }}
       </button>
@@ -499,8 +468,7 @@ watch(userInput, (newValue) => {
       <div class="w-full bg-gray-200 rounded-full h-2">
         <div
           class="bg-gradient-to-r from-amber-400 to-orange-500 h-2 rounded-full transition-all duration-1000 ease-out"
-          :style="{ width: `${(challengeTimeLeft / 60) * 100}%` }"
-        ></div>
+          :style="{ width: `${(challengeTimeLeft / 60) * 100}%` }"></div>
       </div>
       <p class="text-sm text-gray-600 mt-2 flex items-center gap-1">
         <i class="fas fa-info-circle text-blue-400"></i>
