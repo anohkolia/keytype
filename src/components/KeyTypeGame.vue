@@ -206,38 +206,67 @@ const resetGame = () => {
   initGame()
 }
 
+// variables réactives
+const lastTypedIndex = ref(-1)
+const isTyping = ref(false)
+const showSuccessAnimation = ref(false)
+
 // Vérification de la saisie
 const checkInput = () => {
-  // Incrémente le nombre total de frappes
+  isTyping.value = true
   totalKeystrokes.value++
 
-  // Vérifie les erreurs de frappe
+  // Mettre à jour le dernier caractère tapé pour l'animation
+  if (userInput.value.length > 0) {
+    lastTypedIndex.value = userInput.value.length - 1
+  }
+
+  // Vérifier les erreurs
   for (let i = 0; i < userInput.value.length; i++) {
     if (userInput.value[i] !== currentText.value[i]) {
       errors.value++
+
+      // Effet de vibration sur l'erreur
+      if (navigator.vibrate) {
+        navigator.vibrate(50)
+      }
       break
     }
   }
 
-  // Vérifie si l'utilisateur a terminé correctement le texte
+  // Réussite du texte
   if (userInput.value === currentText.value) {
     wpm.value = calculateWPM()
     score.value++
 
-    // Mise à jour du meilleur score
+    // Animation de réussite
+    showSuccessAnimation.value = true
+    setTimeout(() => {
+      showSuccessAnimation.value = false
+    }, 1000)
+
     if (score.value > highScore.value) {
       highScore.value = score.value
     }
 
-    // Sauvegarder le score
     saveScore({
       wpm: wpm.value,
       accuracy: accuracy.value,
       mode: challengeMode.value ? 'challenge' : 'normal'
     })
 
+    // Effet de réussite
+    if (navigator.vibrate) {
+      navigator.vibrate([100, 50, 100])
+    }
+
     initGame()
   }
+
+  // Réinitialiser l'état de frappe après un délai
+  setTimeout(() => {
+    isTyping.value = false
+  }, 100)
 }
 
 // Sauvegarder un score
@@ -352,6 +381,30 @@ watch(userInput, (newValue) => {
   }
 })
 
+// Fonction pour déterminer la classe de chaque caractère
+const getCharacterClass = (index: number): string[] => {
+  const classes: string[] = []
+
+  if (index < userInput.value.length) {
+    // Caractère déjà tapé
+    classes.push('typed')
+
+    if (userInput.value[index] === currentText.value[index]) {
+      classes.push('correct')
+    } else {
+      classes.push('incorrect')
+    }
+  } else if (index === userInput.value.length) {
+    // Caractère actuel
+    classes.push('current')
+  } else {
+    // Caractères à venir
+    classes.push('upcoming')
+  }
+
+  return classes
+}
+
 onMounted(initGame)
 </script>
 
@@ -392,32 +445,45 @@ onMounted(initGame)
       </div>
     </div>
 
-    <!-- Zone de texte -->
-    <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 mb-6 relative overflow-hidden">
-      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+    <!-- Zone de texte avec animation de frappe -->
+  <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 mb-6 relative overflow-hidden">
+    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
 
-      <div v-if="isLoading" class="flex items-center justify-center min-h-20">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <div v-if="isLoading" class="flex items-center justify-center min-h-20">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    </div>
+
+    <div v-else class="text-container">
+      <div class="text-lg font-mono mb-4 min-h-20 leading-relaxed">
+        <span
+          v-for="(char, index) in currentText"
+          :key="index"
+          :class="getCharacterClass(index)"
+          class="character"
+        >
+          {{ char }}
+        </span>
+        <span v-if="userInput.length <= currentText.length" class="cursor"></span>
       </div>
 
-      <p v-else class="text-lg font-mono leading-relaxed text-gray-800 mb-4 min-h-20">
-        <span v-for="(char, index) in currentText" :key="index" :class="{
-          'text-green-500': index < userInput.length && userInput[index] === char,
-          'text-red-500 bg-red-50': index < userInput.length && userInput[index] !== char,
-          'text-gray-400': index >= userInput.length,
-          'animate-gentle-pulse bg-blue-50': index === userInput.length
-        }" class="transition-all duration-100">{{ char }}</span>
-      </p>
+      <!-- Barre de progression -->
+      <div class="progress-indicator" :style="{ width: `${(userInput.length / currentText.length) * 100}%` }"></div>
+    </div>
 
-      <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between mt-4">
+      <div class="text-sm text-gray-500">
+        {{ isLoading ? 'Chargement...' : 'Tapez le texte ci-dessus' }}
+      </div>
+      <div class="flex items-center gap-4">
         <div class="text-sm text-gray-500">
-          {{ isLoading ? 'Chargement...' : 'Tapez le texte ci-dessus' }}
+          {{ userInput.length }}/{{ currentText.length }} caractères
         </div>
         <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
           {{ wpm > 0 ? wpm + ' MPM' : 'Prêt' }}
         </div>
       </div>
     </div>
+  </div>
 
     <!-- Champ de saisie -->
     <div class="relative mb-8">
@@ -476,6 +542,18 @@ onMounted(initGame)
       </p>
     </div>
   </div>
+
+  <!-- Animation de réussite -->
+  <transition name="success">
+    <div
+      v-if="showSuccessAnimation"
+      class="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
+    >
+      <div class="text-6xl text-green-500 animate-bounce">
+        <i class="fas fa-check-circle"></i>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <style>
@@ -520,5 +598,103 @@ onMounted(initGame)
 
 .no-copy-paste::-moz-selection {
   background: transparent;
+}
+
+/* Animation de frappe pour les caractères */
+.character {
+  transition: all 0.1s ease;
+  position: relative;
+}
+
+.character.correct {
+  color: #10b981;
+  transform: scale(1.05);
+}
+
+.character.incorrect {
+  color: #ef4444;
+  background-color: #fef2f2;
+  animation: incorrect-typing 0.3s ease;
+}
+
+.character.current {
+  background-color: #dbeafe;
+  animation: current-char-pulse 1.5s infinite;
+  border-left: 2px solid #3b82f6;
+}
+
+.character.upcoming {
+  color: #9ca3af;
+}
+
+/* Animation pour le caractère actuel */
+@keyframes current-char-pulse {
+  0%, 100% { background-color: #dbeafe; }
+  50% { background-color: #bfdbfe; }
+}
+
+/* Animation pour les erreurs */
+@keyframes incorrect-typing {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
+
+/* Effet de "tap" sur les caractères */
+@keyframes tap-effect {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.character.typed {
+  animation: tap-effect 0.1s ease;
+}
+
+/* Curseur clignotant */
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background-color: #3b82f6;
+  animation: blink 1s infinite;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Container avec effet de focus */
+.text-container {
+  position: relative;
+  line-height: 1.8;
+  letter-spacing: 0.5px;
+}
+
+/* Indicateur de progression */
+.progress-indicator {
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.success-enter-active,
+.success-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.success-enter-from,
+.success-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
 }
 </style>
