@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useLocalStorage } from '@/composables/useLocalStorage'
 
 type Language = 'french' | 'english'
@@ -82,6 +82,7 @@ const { value: savedHighScore } = useLocalStorage<number>('keytype-highscore', 0
 const { value: savedBestTime } = useLocalStorage<number>('keytype-besttime', 0)
 const { value: scores } = useLocalStorage<Score[]>('typing-scores', [])
 
+// États réactifs
 const language = ref<Language>(savedLanguage.value)
 const highScore = ref<number>(savedHighScore.value)
 const bestTime = ref<number>(savedBestTime.value)
@@ -96,22 +97,51 @@ const challengeMode = ref(false)
 const challengeTimeLeft = ref(0)
 const challengeTimer = ref<number | null>(null)
 const isLoading = ref(false)
+const lastTypedIndex = ref(-1)
+const isTyping = ref(false)
+const showSuccessAnimation = ref(false)
 
-// Fonction pour obtenir une citation aléatoire
+// États du clavier
+const activeKey = ref('')
+const shiftActive = ref(false)
+const spaceActive = ref(false)
+const enterActive = ref(false)
+const backspaceActive = ref(false)
+
+// Mapping des touches spéciales
+const specialKeys = {
+  ' ': 'space',
+  'Enter': 'enter',
+  'Backspace': 'backspace',
+  'Shift': 'shift'
+}
+
+// Computed properties
+const accuracy = computed(() => {
+  if (totalKeystrokes.value === 0) return 100
+  return Math.round(((totalKeystrokes.value - errors.value) / totalKeystrokes.value) * 100)
+})
+
+const elapsedTime = computed(() => {
+  if (!startTime.value) return 0
+  return Math.floor((Date.now() - startTime.value) / 1000)
+})
+
+const t = computed(() => translations[language.value])
+
+// Fonctions
 const fetchRandomText = async (): Promise<string> => {
   isLoading.value = true
 
   try {
     const langCode = language.value === 'french' ? 'fr' : 'en'
 
-    // Option 1: Quotable (anglais seulement)
     if (langCode === 'en') {
       const response = await fetch('https://api.quotable.io/random?maxLength=120')
       const data = await response.json()
       return data.content
     }
 
-    // Option 2: Citation française (fallback car peu d'APIs françaises gratuites)
     const response = await fetch('https://jsonplaceholder.typicode.com/posts/' + Math.floor(Math.random() * 100))
     const data = await response.json()
     return data.body?.split('\n')[0]?.substring(0, 120) || FALLBACK_TEXTS.french[Math.floor(Math.random() * FALLBACK_TEXTS.french.length)]
@@ -125,7 +155,6 @@ const fetchRandomText = async (): Promise<string> => {
   }
 }
 
-// Initialisation du jeu
 const initGame = async () => {
   currentText.value = await fetchRandomText()
   userInput.value = ''
@@ -135,30 +164,13 @@ const initGame = async () => {
   wpm.value = 0
 }
 
-// Calcul de précision
-const accuracy = computed(() => {
-  if (totalKeystrokes.value === 0) return 100
-  return Math.round(((totalKeystrokes.value - errors.value) / totalKeystrokes.value) * 100)
-})
-
-// Calcul du temps écoulé
-const elapsedTime = computed(() => {
-  if (!startTime.value) return 0
-  return Math.floor((Date.now() - startTime.value) / 1000)
-})
-
-// Traductions actuelles selon la langue
-const t = computed(() => translations[language.value])
-
-// Calcul des mots par minute (WPM)
 const calculateWPM = () => {
   if (!startTime.value) return 0
-  const timeElapsed = (Date.now() - startTime.value) / 60000 // en minutes
+  const timeElapsed = (Date.now() - startTime.value) / 60000
   const words = userInput.value.trim().split(/\s+/).length
   return Math.round(words / timeElapsed)
 }
 
-// Démarrer le défi
 const startChallenge = () => {
   challengeMode.value = true
   score.value = 0
@@ -171,34 +183,27 @@ const startChallenge = () => {
 
   challengeTimer.value = setInterval(() => {
     challengeTimeLeft.value--
-
     if (challengeTimeLeft.value <= 0) {
       endChallenge()
     }
   }, 1000) as unknown as number
 }
 
-// Terminer le défi
 const endChallenge = () => {
   if (challengeTimer.value) {
     clearInterval(challengeTimer.value)
     challengeTimer.value = null
   }
-
   challengeMode.value = false
-
-  // Mise à jour du meilleur temps
   if (score.value > bestTime.value) {
     bestTime.value = score.value
   }
 }
 
-// Réinitialisation du jeu
 const resetGame = () => {
   if (challengeMode.value) {
     endChallenge()
   }
-
   score.value = 0
   wpm.value = 0
   errors.value = 0
@@ -206,84 +211,18 @@ const resetGame = () => {
   initGame()
 }
 
-// variables réactives
-const lastTypedIndex = ref(-1)
-const isTyping = ref(false)
-const showSuccessAnimation = ref(false)
-
-// Vérification de la saisie
-const checkInput = () => {
-  isTyping.value = true
-  totalKeystrokes.value++
-
-  // Mettre à jour le dernier caractère tapé pour l'animation
-  if (userInput.value.length > 0) {
-    lastTypedIndex.value = userInput.value.length - 1
-  }
-
-  // Vérifier les erreurs
-  for (let i = 0; i < userInput.value.length; i++) {
-    if (userInput.value[i] !== currentText.value[i]) {
-      errors.value++
-
-      // Effet de vibration sur l'erreur
-      if (navigator.vibrate) {
-        navigator.vibrate(50)
-      }
-      break
-    }
-  }
-
-  // Réussite du texte
-  if (userInput.value === currentText.value) {
-    wpm.value = calculateWPM()
-    score.value++
-
-    // Animation de réussite
-    showSuccessAnimation.value = true
-    setTimeout(() => {
-      showSuccessAnimation.value = false
-    }, 1000)
-
-    if (score.value > highScore.value) {
-      highScore.value = score.value
-    }
-
-    saveScore({
-      wpm: wpm.value,
-      accuracy: accuracy.value,
-      mode: challengeMode.value ? 'challenge' : 'normal'
-    })
-
-    // Effet de réussite
-    if (navigator.vibrate) {
-      navigator.vibrate([100, 50, 100])
-    }
-
-    initGame()
-  }
-
-  // Réinitialiser l'état de frappe après un délai
-  setTimeout(() => {
-    isTyping.value = false
-  }, 100)
-}
-
-// Sauvegarder un score
 const saveScore = (newScore: Omit<Score, 'date'>) => {
   scores.value = [
     ...scores.value,
     { ...newScore, date: new Date().toISOString() }
-  ].sort((a, b) => b.wpm - a.wpm).slice(0, 10) // Garder les 10 meilleurs
+  ].sort((a, b) => b.wpm - a.wpm).slice(0, 10)
 }
 
-// Changement de langue
 const changeLanguage = async (lang: Language) => {
   language.value = lang
   await initGame()
 }
 
-// Partager le score
 const shareScore = () => {
   const text = challengeMode.value
     ? `${t.value.challenge}: ${score.value} ${t.value.score} | ${t.value.accuracy}: ${accuracy.value}%`
@@ -302,7 +241,6 @@ const shareScore = () => {
   }
 }
 
-// Méthode de partage alternative
 const fallbackShare = (text: string) => {
   navigator.clipboard.writeText(text)
     .then(() => alert('Score copié dans le presse-papier!'))
@@ -340,21 +278,145 @@ const handleContextMenu = (event: MouseEvent) => {
   event.preventDefault()
 }
 
+// Fonction UNIQUE handleKeyDown qui gère tout
 const handleKeyDown = (event: KeyboardEvent) => {
-  const ctrlKey = event.ctrlKey || event.metaKey
+  const key = event.key
+  const keyLower = key.toLowerCase()
 
-  if (ctrlKey && ['c', 'v', 'x', 'a'].includes(event.key)) {
+  // 1. Gestion de la protection anti-triche
+  const ctrlKey = event.ctrlKey || event.metaKey
+  if (ctrlKey && ['c', 'v', 'x', 'a'].includes(keyLower)) {
     event.preventDefault()
-    if (event.key === 'v') {
+    if (keyLower === 'v') {
       const input = event.target as HTMLInputElement
       input.classList.add('shake-animation')
       setTimeout(() => input.classList.remove('shake-animation'), 500)
     }
+    return
   }
 
-  if (event.key === 'F10' && event.shiftKey || event.key === 'ContextMenu') {
+  if (key === 'F10' && event.shiftKey || key === 'ContextMenu') {
     event.preventDefault()
+    return
   }
+
+  // 2. Gestion du clavier visuel
+  if (event.ctrlKey || event.altKey || event.metaKey) return
+
+  // Gestion des touches spéciales
+  if (specialKeys[key as keyof typeof specialKeys]) {
+    switch (key) {
+      case ' ':
+        spaceActive.value = true
+        break
+      case 'Enter':
+        enterActive.value = true
+        break
+      case 'Backspace':
+        backspaceActive.value = true
+        break
+      case 'Shift':
+        shiftActive.value = true
+        break
+    }
+    return
+  }
+
+  // Touches alphabétiques et caractères spéciaux
+  if (key.length === 1) {
+    activeKey.value = keyLower
+    setTimeout(() => {
+      activeKey.value = ''
+    }, 200)
+  }
+}
+
+const handleKeyUp = (event: KeyboardEvent) => {
+  const key = event.key
+  const keyLower = key.toLowerCase()
+
+  switch (key) {
+    case ' ':
+      spaceActive.value = false
+      break
+    case 'Enter':
+      enterActive.value = false
+      break
+    case 'Backspace':
+      backspaceActive.value = false
+      break
+    case 'Shift':
+      shiftActive.value = false
+      break
+  }
+}
+
+const checkInput = () => {
+  isTyping.value = true
+  totalKeystrokes.value++
+
+  if (userInput.value.length > 0) {
+    lastTypedIndex.value = userInput.value.length - 1
+  }
+
+  for (let i = 0; i < userInput.value.length; i++) {
+    if (userInput.value[i] !== currentText.value[i]) {
+      errors.value++
+      if (navigator.vibrate) {
+        navigator.vibrate(50)
+      }
+      break
+    }
+  }
+
+  if (userInput.value === currentText.value) {
+    wpm.value = calculateWPM()
+    score.value++
+
+    showSuccessAnimation.value = true
+    setTimeout(() => {
+      showSuccessAnimation.value = false
+    }, 1000)
+
+    if (score.value > highScore.value) {
+      highScore.value = score.value
+    }
+
+    saveScore({
+      wpm: wpm.value,
+      accuracy: accuracy.value,
+      mode: challengeMode.value ? 'challenge' : 'normal'
+    })
+
+    if (navigator.vibrate) {
+      navigator.vibrate([100, 50, 100])
+    }
+
+    initGame()
+  }
+
+  setTimeout(() => {
+    isTyping.value = false
+  }, 100)
+}
+
+// Fonction pour déterminer la classe de chaque caractère (modifiée)
+const getCharacterClass = (index: number): string[] => {
+  const classes: string[] = []
+
+  if (index < userInput.value.length) {
+    // Caractère déjà tapé
+    if (userInput.value[index] === currentText.value[index]) {
+      classes.push('text-green-600') // Correct - vert
+    } else {
+      classes.push('text-red-600 bg-red-50') // Incorrect - rouge
+    }
+  } else {
+    // Caractères à venir
+    classes.push('text-gray-800') // Gris pour le texte non tapé
+  }
+
+  return classes
 }
 
 // Observateurs
@@ -381,31 +443,20 @@ watch(userInput, (newValue) => {
   }
 })
 
-// Fonction pour déterminer la classe de chaque caractère
-const getCharacterClass = (index: number): string[] => {
-  const classes: string[] = []
+// Lifecycle hooks
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('keyup', handleKeyUp)
+  initGame()
+})
 
-  if (index < userInput.value.length) {
-    // Caractère déjà tapé
-    classes.push('typed')
-
-    if (userInput.value[index] === currentText.value[index]) {
-      classes.push('correct')
-    } else {
-      classes.push('incorrect')
-    }
-  } else if (index === userInput.value.length) {
-    // Caractère actuel
-    classes.push('current')
-  } else {
-    // Caractères à venir
-    classes.push('upcoming')
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('keyup', handleKeyUp)
+  if (challengeTimer.value) {
+    clearInterval(challengeTimer.value)
   }
-
-  return classes
-}
-
-onMounted(initGame)
+})
 </script>
 
 <template>
@@ -445,16 +496,20 @@ onMounted(initGame)
       </div>
     </div>
 
-    <!-- Zone de texte avec animation de frappe -->
-  <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 mb-6 relative overflow-hidden">
-    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
-
-    <div v-if="isLoading" class="flex items-center justify-center min-h-20">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+<!-- Zone de texte avec textarea -->
+  <div class="relative mb-8">
+    <!-- Bulle flottante -->
+    <div v-if="userInput.length === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+      <div class="bg-green-200 border border-gray-200 rounded-lg px-4 py-2 shadow-lg flex items-center gap-2 animate-pulse floating-bubble">
+        <i class="fas fa-keyboard text-blue-500"></i>
+        <span class="text-gray-700 font-medium">{{ t.startTyping }}</span>
+      </div>
     </div>
 
-    <div v-else class="text-container">
-      <div class="text-lg font-mono mb-4 min-h-20 leading-relaxed">
+    <!-- Container relatif -->
+    <div class="relative bg-white border-2 border-gray-300 rounded-xl focus-within:border-blue-400 transition-colors">
+      <!-- Texte d'arrière-plan -->
+      <div class="absolute inset-0 p-4 text-lg font-mono text-gray-300 pointer-events-none select-none z-0 leading-relaxed whitespace-pre-wrap">
         <span
           v-for="(char, index) in currentText"
           :key="index"
@@ -463,43 +518,30 @@ onMounted(initGame)
         >
           {{ char }}
         </span>
-        <span v-if="userInput.length <= currentText.length" class="cursor"></span>
       </div>
 
-      <!-- Barre de progression -->
-      <div class="progress-indicator" :style="{ width: `${(userInput.length / currentText.length) * 100}%` }"></div>
+      <!-- Textarea transparent -->
+      <textarea
+        v-model="userInput"
+        @input="checkInput"
+        class="w-full h-15 p-4 text-lg font-mono bg-transparent outline-none resize-none relative z-10 caret-blue-500 text-transparent"
+        :placeholder="t.startTyping"
+        :disabled="challengeMode && challengeTimeLeft <= 0"
+        autocapitalize="off"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        ref="textInput"
+      ></textarea>
     </div>
 
-    <div class="flex items-center justify-between mt-4">
-      <div class="text-sm text-gray-500">
-        {{ isLoading ? 'Chargement...' : 'Tapez le texte ci-dessus' }}
-      </div>
-      <div class="flex items-center gap-4">
-        <div class="text-sm text-gray-500">
-          {{ userInput.length }}/{{ currentText.length }} caractères
-        </div>
-        <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-          {{ wpm > 0 ? wpm + ' MPM' : 'Prêt' }}
-        </div>
-      </div>
+    <!-- Indicateur de progression -->
+    <div class="mt-2 flex justify-between items-center text-sm text-gray-500">
+      <span>{{ userInput.length }}/{{ currentText.length }} caractères</span>
+      <span v-if="wpm > 0">{{ wpm }} MPM</span>
+      <span v-else>Prêt</span>
     </div>
   </div>
-
-    <!-- Champ de saisie -->
-    <div class="relative mb-8">
-      <input v-model="userInput" @input="checkInput" @paste="handlePaste" @copy="handleCopy" @cut="handleCut"
-        @dragover="handleDragOver" @drop="handleDrop" @contextmenu="handleContextMenu" @keydown="handleKeyDown"
-        class="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-gray-400 no-copy-paste"
-        :placeholder="t.startTyping" :disabled="challengeMode && challengeTimeLeft <= 0" autofocus autocapitalize="off"
-        autocomplete="off" autocorrect="off" spellcheck="false" maxlength="1000" />
-      <div class="absolute inset-y-0 right-0 flex items-center pr-4">
-        <div class="w-3 h-3 rounded-full" :class="{
-        'bg-green-400': userInput.length > 0 && userInput === currentText.slice(0, userInput.length),
-        'bg-red-400': userInput.length > 0 && userInput !== currentText.slice(0, userInput.length),
-        'bg-gray-300': userInput.length === 0
-      }"></div>
-      </div>
-    </div>
 
     <!-- Boutons d'action -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -554,6 +596,99 @@ onMounted(initGame)
       </div>
     </div>
   </transition>
+
+<!-- Clavier AZERTY avec classes Tailwind directes -->
+<div class="keyboard-container mt-8 bg-gray-100 rounded-2xl p-4 shadow-lg border border-gray-200">
+  <!-- Ligne 1 -->
+  <div class="keyboard-row flex justify-center gap-1 mb-2">
+    <div class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700">²</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">&</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">é</div>
+    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">"</div>
+    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">'</div>
+    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200">(</div>
+    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200">-</div>
+    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200">è</div>
+    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">_</div>
+    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">ç</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">à</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">)</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">=</div>
+    <div class="key key-grey key-special h-12 w-[60px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pr-2 justify-end text-xs uppercase" :class="{ 'key-active': backspaceActive }">
+      ←
+      <span v-if="backspaceActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">←</span>
+    </div>
+  </div>
+
+  <!-- Ligne 2 -->
+  <div class="keyboard-row flex justify-center gap-1 mb-2">
+    <div class="key key-grey key-special h-12 w-[60px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pl-2 justify-start text-xs uppercase">Tab</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'a' }">a</div>
+    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 'z' }">z</div>
+    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'e' }">e</div>
+    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'r' }">r</div>
+    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 't' }">t</div>
+    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'y' }">y</div>
+    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'u' }">u</div>
+    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'i' }">i</div>
+    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 'o' }">o</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'p' }">p</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">^</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">$</div>
+    <div class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700">*</div>
+  </div>
+
+  <!-- Ligne 3 -->
+  <div class="keyboard-row flex justify-center gap-1 mb-2">
+    <div class="key key-grey key-special h-12 w-[74px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-3 pl-2 justify-start text-xs uppercase">Verr Maj</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'q' }">q</div>
+    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 's' }">s</div>
+    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'd' }">d</div>
+    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'f' }">f</div>
+    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'g' }">g</div>
+    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'h' }">h</div>
+    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'j' }">j</div>
+    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'k' }">k</div>
+    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 'l' }">l</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'm' }">m</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">ù</div>
+    <div class="key key-enter key-special h-12 w-[74px] flex items-center justify-center rounded-lg font-medium text-sm bg-blue-100 text-blue-800 border border-blue-200 pr-2 justify-end text-xs uppercase" :class="{ 'key-active': enterActive }">
+      Entrée
+      <span v-if="enterActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">↵</span>
+    </div>
+  </div>
+
+  <!-- Ligne 4 -->
+  <div class="keyboard-row flex justify-center gap-1 mb-2">
+    <div class="key key-grey key-special h-12 w-[95px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-2 justify-start text-xs uppercase" :class="{ 'key-active': shiftActive }">
+      Maj
+      <span v-if="shiftActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">⇧</span>
+    </div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'w' }">w</div>
+    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 'x' }">x</div>
+    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'c' }">c</div>
+    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'v' }">v</div>
+    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'b' }">b</div>
+    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'n' }">n</div>
+    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200">,</div>
+    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">;</div>
+    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">:</div>
+    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">!</div>
+    <div class="key key-grey key-special h-12 w-[95px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-2 justify-start text-xs uppercase" :class="{ 'key-active': shiftActive }">
+      Maj
+      <span v-if="shiftActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">⇧</span>
+    </div>
+  </div>
+
+  <!-- Ligne 5 - Barre d'espace -->
+  <div class="keyboard-row flex justify-center gap-1">
+    <div class="key key-grey key-special h-12 w-[220px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pl-2 pr-4 justify-start text-xs uppercase" :class="{ 'key-active': spaceActive }">
+      Espace
+      <span v-if="spaceActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">␣</span>
+    </div>
+  </div>
+</div>
+
 </template>
 
 <style>
@@ -687,14 +822,216 @@ onMounted(initGame)
   border-radius: 2px;
 }
 
-.success-enter-active,
-.success-leave-active {
-  transition: opacity 0.5s ease;
+/* Styles du clavier - SUPPRIMEZ les @apply et utilisez ces classes */
+.key {
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.1s;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
 }
 
-.success-enter-from,
-.success-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
+/* Couleurs des touches */
+.key-grey {
+  background-color: #d1d5db;
+  color: #374151;
+  border: 1px solid #9ca3af;
 }
+
+.key-indigo {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.key-green {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.key-pink {
+  background-color: #fce7f3;
+  color: #9d174d;
+  border: 1px solid #fbcfe8;
+}
+
+.key-mint {
+  background-color: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
+.key-yellow {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.key-enter {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+/* Touches spéciales */
+.key-special {
+  background-color: #9ca3af;
+  color: white;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* Animation de frappe */
+.key-active {
+  animation: key-press 0.3s ease;
+  transform: scale(0.95);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes key-press {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* Indicateur de doigt */
+.finger-indicator {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 1rem;
+  height: 1rem;
+  background-color: #3b82f6;
+  border-radius: 9999px;
+  color: white;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Layout responsive */
+@media (max-width: 768px) {
+  .key {
+    height: 2.5rem;
+    font-size: 0.75rem;
+    min-width: 2rem;
+  }
+
+  .key-special {
+    font-size: 0.65rem;
+  }
+}
+
+/* Effet de lueur pour les touches actives */
+.key-glow {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+/* Animation shake */
+.shake-animation {
+  animation: shake 0.5s ease-in-out;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Curseur personnalisé */
+.cursor {
+  animation: blink 1s infinite;
+  transition: transform 0.1s ease;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Champ de saisie transparent */
+input[type="text"] {
+  color: transparent !important;
+  caret-color: #3b82f6; /* Couleur du curseur bleu */
+}
+
+/* Surlignement de la sélection */
+input[type="text"]::selection {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Bulle flottante */
+.floating-bubble {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Adaptation responsive */
+@media (max-width: 768px) {
+  .character {
+    font-size: 16px; /* Taille de police fixe pour mobile */
+  }
+
+  input[type="text"] {
+    font-size: 16px; /* Évite le zoom sur iOS */
+  }
+}
+
+
+/* Pour la version textarea */
+textarea {
+  color: transparent !important;
+  caret-color: #3b82f6;
+  line-height: 1.6;
+}
+
+textarea::selection {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Empêcher le resize */
+textarea {
+  resize: none;
+}
+
+/* Scroll personnalisé */
+textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+textarea::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
 </style>
