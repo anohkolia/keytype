@@ -10,7 +10,7 @@ import KeyTypeGame from './components/KeyTypeGame.vue'
           <i class="fas fa-keyboard text-white text-xl"></i>
         </div>
         <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent">
-          KeyType
+          TypeKey
         </h1>
       </div>
       <p class="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -24,7 +24,7 @@ import KeyTypeGame from './components/KeyTypeGame.vue'
       <div class="border-t border-gray-200 pt-8">
         <p class="text-sm text-gray-500">
           <i class="fas fa-heart text-red-500 mr-1"></i>
-          © {{ new Date().getFullYear() }} KeyType - Développé avec passion pour les amateurs de dactylographie
+          © {{ new Date().getFullYear() }} TypeKey - Développé pour les amateurs de dactylographie
         </p>
       </div>
     </footer>
