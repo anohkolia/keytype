@@ -499,7 +499,7 @@ onUnmounted(() => {
 <!-- Zone de texte avec textarea -->
   <div class="relative mb-8">
     <!-- Bulle flottante -->
-    <div v-if="userInput.length === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+    <div v-if="userInput.length === 0" class="absolute inset-x-0 top-13 flex items-center justify-center pointer-events-none z-10">
       <div class="bg-green-200 border border-gray-200 rounded-lg px-4 py-2 shadow-lg flex items-center gap-2 animate-pulse floating-bubble">
         <i class="fas fa-keyboard text-blue-500"></i>
         <span class="text-gray-700 font-medium">{{ t.startTyping }}</span>
