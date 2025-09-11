@@ -1,26 +1,37 @@
 # keytype
 
-This template should help get you started developing with Vue 3 in Vite.
+Ceci est une application de dactylographie ou du moins un jeux pour se rémuer les doigts et passer le temps
+Vous pouvez y ajouter votre touche si vous voulez ...
 
-## Recommended IDE Setup
+## Titre
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
 
-## Type Support for `.vue` Imports in TS
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+## Un autre titre
 
-## Customize configuration
 
-See [Vite Configuration Reference](https://vite.dev/config/).
 
-## Project Setup
+## Pour récupérer le projet sur votre marchine
+
+### Avec le lien ssh :
+
+```sh
+git clone git@github.com:anohkolia/keytype.git
+```
+### Avec le lien https :
+
+```sh
+git clone https://github.com/anohkolia/keytype.git 
+```
+
+## Installation de dépendance
+### Exécutez la commande suivante pour installer les dépendances
 
 ```sh
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Compilation du projet
 
 ```sh
 npm run dev
