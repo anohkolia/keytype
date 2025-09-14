@@ -156,13 +156,16 @@ const fetchRandomText = async (): Promise<string> => {
 }
 
 const initGame = async () => {
-  currentText.value = await fetchRandomText()
-  userInput.value = ''
-  startTime.value = Date.now()
-  errors.value = 0
-  totalKeystrokes.value = 0
-  wpm.value = 0
-}
+  currentText.value = await fetchRandomText();
+  userInput.value = '';
+  startTime.value = Date.now();
+  errors.value = 0;
+  totalKeystrokes.value = 0;
+  wpm.value = 0;
+
+  // Réinitialise le compte à rebours à chaque nouvelle phrase
+  resetCountdown();
+};
 
 const calculateWPM = () => {
   if (!startTime.value) return 0
@@ -172,10 +175,11 @@ const calculateWPM = () => {
 }
 
 const startChallenge = () => {
-  challengeMode.value = true
-  score.value = 0
-  challengeTimeLeft.value = 60
-  initGame()
+  challengeMode.value = true;
+  score.value = 0;
+  challengeTimeLeft.value = 60;
+  startAutoCountdown(); // Démarre le compte à rebours
+  initGame();
 
   if (challengeTimer.value) {
     clearInterval(challengeTimer.value)
@@ -198,18 +202,23 @@ const endChallenge = () => {
   if (score.value > bestTime.value) {
     bestTime.value = score.value
   }
+  stopCountdown(); // Arrête le compte à rebours
 }
 
 const resetGame = () => {
   if (challengeMode.value) {
-    endChallenge()
+    endChallenge();
   }
-  score.value = 0
-  wpm.value = 0
-  errors.value = 0
-  totalKeystrokes.value = 0
-  initGame()
-}
+
+  // Réinitialise le compte à rebours
+  resetCountdown();
+
+  score.value = 0;
+  wpm.value = 0;
+  errors.value = 0;
+  totalKeystrokes.value = 0;
+  initGame();
+};
 
 const saveScore = (newScore: Omit<Score, 'date'>) => {
   scores.value = [
@@ -432,7 +441,17 @@ watch(bestTime, (newTime) => {
   savedBestTime.value = newTime
 })
 
-watch(userInput, (newValue) => {
+watch(userInput, (newValue, oldValue) => {
+  // Lance le compte à rebours au premier caractère tapé
+  if (newValue.length === 1 && oldValue.length === 0) {
+    startAutoCountdown();
+  }
+
+  // Réinitialise le compte à rebours quand le texte est complété
+  if (newValue === currentText.value) {
+    resetCountdown();
+  }
+
   if (newValue.length > currentText.value.length) {
     userInput.value = newValue.slice(0, currentText.value.length)
     const input = document.querySelector('input')
@@ -442,6 +461,59 @@ watch(userInput, (newValue) => {
     }
   }
 })
+
+// ==================== COMPTE À REBOURS AUTOMATIQUE ====================
+const countdown = ref(60); // 60 secondes par défaut
+const isCountdownRunning = ref(false);
+let countdownInterval: number | null = null;
+
+// Démarrer le compte à rebours automatiquement
+const startAutoCountdown = () => {
+  if (!isCountdownRunning.value && countdown.value > 0) {
+    isCountdownRunning.value = true;
+
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+    }
+
+    countdownInterval = setInterval(() => {
+      countdown.value--;
+
+      if (countdown.value <= 0) {
+        stopCountdown();
+        handleCountdownEnd();
+      }
+    }, 1000) as unknown as number;
+  }
+};
+
+// Arrêter le compte à rebours
+const stopCountdown = () => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  isCountdownRunning.value = false;
+};
+
+// Réinitialiser le compte à rebours
+const resetCountdown = () => {
+  stopCountdown();
+  countdown.value = 60;
+};
+
+// Actions à la fin du compte à rebours
+const handleCountdownEnd = () => {
+  console.log("Temps écoulé !");
+  // Vous pouvez ajouter des actions spécifiques ici si besoin
+};
+
+// Formatage du temps (mm:ss)
+const formattedCountdown = computed(() => {
+  const minutes = Math.floor(countdown.value / 60);
+  const seconds = countdown.value % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+});
 
 // Lifecycle hooks
 onMounted(() => {
@@ -479,13 +551,41 @@ onUnmounted(() => {
         <div class="text-2xl font-bold text-green-600">{{ accuracy }}%</div>
       </div>
 
-      <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
-        <div class="flex items-center gap-2 mb-2">
-          <i class="fas fa-clock text-purple-500"></i>
-          <div class="text-sm text-gray-500">{{ t.time }}</div>
-        </div>
-        <div class="text-2xl font-bold text-purple-600">{{ elapsedTime }}s</div>
+<!-- Carte compte à rebours automatique -->
+  <div class="bg-purple-50 p-3 rounded-lg text-center transition-all duration-300 border border-purple-200"
+       :class="{
+         'bg-red-100 border-red-200': countdown <= 10,
+         'animate-pulse': countdown <= 5,
+         'bg-green-100 border-green-200': !isCountdownRunning && countdown === 60
+       }">
+    <div class="flex items-center gap-2 justify-center mb-1">
+      <i class="fas fa-stopwatch"
+         :class="{
+           'text-purple-500': countdown > 10,
+           'text-red-500': countdown <= 10,
+           'text-green-500': !isCountdownRunning && countdown === 60
+         }"></i>
+      <div class="text-sm font-medium"
+           :class="{
+             'text-purple-600': countdown > 10,
+             'text-red-600': countdown <= 10,
+             'text-green-600': !isCountdownRunning && countdown === 60
+           }">
+        {{ countdown > 0 ? 'Temps restant' : 'Terminé!' }}
       </div>
+    </div>
+    <div class="text-2xl font-bold"
+         :class="{
+           'text-purple-600': countdown > 10,
+           'text-red-600': countdown <= 10,
+           'text-green-600': !isCountdownRunning && countdown === 60
+         }">
+      {{ formattedCountdown }}
+    </div>
+    <div class="text-xs text-gray-500 mt-1">
+      {{ isCountdownRunning ? 'En cours...' : 'Commencez à taper' }}
+    </div>
+  </div>
 
       <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
         <div class="flex items-center gap-2 mb-2">
@@ -1032,6 +1132,27 @@ textarea::-webkit-scrollbar-thumb {
 
 textarea::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+
+/* Animation de pulsation pour les dernières secondes */
+@keyframes critical-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  }
+}
+
+.animate-pulse {
+  animation: critical-pulse 0.5s ease-in-out infinite;
+}
+
+/* Transition fluide pour les changements d'état */
+.countdown-transition {
+  transition: all 0.3s ease-in-out;
 }
 
 </style>
