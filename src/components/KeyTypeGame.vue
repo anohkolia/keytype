@@ -172,10 +172,11 @@ const calculateWPM = () => {
 }
 
 const startChallenge = () => {
-  challengeMode.value = true
-  score.value = 0
-  challengeTimeLeft.value = 60
-  initGame()
+  challengeMode.value = true;
+  score.value = 0;
+  challengeTimeLeft.value = 60;
+  startCountdown(60); // Démarre le compte à rebours
+  initGame();
 
   if (challengeTimer.value) {
     clearInterval(challengeTimer.value)
@@ -198,12 +199,14 @@ const endChallenge = () => {
   if (score.value > bestTime.value) {
     bestTime.value = score.value
   }
+  stopCountdown(); // Arrête le compte à rebours
 }
 
 const resetGame = () => {
   if (challengeMode.value) {
     endChallenge()
   }
+  resetCountdown();
   score.value = 0
   wpm.value = 0
   errors.value = 0
@@ -443,6 +446,55 @@ watch(userInput, (newValue) => {
   }
 })
 
+// Compte à rebours
+const countdown = ref(60); // 60 secondes par défaut
+const isCountdownRunning = ref(false);
+let countdownInterval: number | null = null;
+
+// Démarrer le compte à rebours
+const startCountdown = (seconds: number = 60) => {
+  countdown.value = seconds;
+  isCountdownRunning.value = true;
+
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+
+  countdownInterval = setInterval(() => {
+    countdown.value--;
+
+    if (countdown.value <= 0) {
+      stopCountdown();
+      // Optionnel : action à la fin du compte à rebours
+      if (challengeMode.value) {
+        endChallenge();
+      }
+    }
+  }, 1000) as unknown as number;
+};
+
+// Arrêter le compte à rebours
+const stopCountdown = () => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  isCountdownRunning.value = false;
+};
+
+// Réinitialiser le compte à rebours
+const resetCountdown = () => {
+  stopCountdown();
+  countdown.value = 60;
+};
+
+// Formatage du temps (mm:ss)
+const formattedCountdown = computed(() => {
+  const minutes = Math.floor(countdown.value / 60);
+  const seconds = countdown.value % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+});
+
 // Lifecycle hooks
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
@@ -479,13 +531,39 @@ onUnmounted(() => {
         <div class="text-2xl font-bold text-green-600">{{ accuracy }}%</div>
       </div>
 
-      <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
-        <div class="flex items-center gap-2 mb-2">
-          <i class="fas fa-clock text-purple-500"></i>
-          <div class="text-sm text-gray-500">{{ t.time }}</div>
-        </div>
-        <div class="text-2xl font-bold text-purple-600">{{ elapsedTime }}s</div>
+      <!-- Carte compte à rebours -->
+  <div class="bg-purple-50 p-3 rounded-lg text-center transition-all duration-300"
+       :class="{ 'bg-red-100': countdown <= 10, 'animate-pulse': countdown <= 5 }">
+    <div class="flex items-center gap-2 justify-center mb-1">
+      <i class="fas fa-stopwatch text-purple-500"
+         :class="{ 'text-red-500': countdown <= 10 }"></i>
+      <div class="text-sm" :class="{ 'text-gray-600': countdown > 10, 'text-red-600': countdown <= 10 }">
+        {{ countdown > 0 ? 'Temps restant' : 'Terminé!' }}
       </div>
+    </div>
+    <div class="text-2xl font-bold"
+         :class="{ 'text-purple-600': countdown > 10, 'text-red-600': countdown <= 10 }">
+      {{ formattedCountdown }}
+    </div>
+
+    <!-- Contrôles du compte à rebours -->
+    <div class="flex justify-center gap-2 mt-2" v-if="!challengeMode">
+      <button v-if="!isCountdownRunning"
+              @click="startCountdown(60)"
+              class="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+        <i class="fas fa-play"></i>
+      </button>
+      <button v-if="isCountdownRunning"
+              @click="stopCountdown"
+              class="px-2 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors">
+        <i class="fas fa-pause"></i>
+      </button>
+      <button @click="resetCountdown"
+              class="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+        <i class="fas fa-undo"></i>
+      </button>
+    </div>
+  </div>
 
       <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
         <div class="flex items-center gap-2 mb-2">
@@ -1032,6 +1110,21 @@ textarea::-webkit-scrollbar-thumb {
 
 textarea::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+
+/* Animation pour le compte à rebours */
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse {
+  animation: pulse-warning 0.5s infinite;
+}
+
+/* Transition pour le changement de couleur */
+.transition-all {
+  transition: all 0.3s ease;
 }
 
 </style>
