@@ -1,7 +1,7 @@
 # keytype
 
 Ceci est une application de dactylographie ou du moins un jeux pour se rémuer les doigts et passer le temps
-Vous pouvez y ajouter votre touche si vous voulez ...
+Vous pouvez participer au dev et ajouter votre touche si vous voulez ...
 
 ## Titre
 
