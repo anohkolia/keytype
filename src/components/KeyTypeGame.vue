@@ -20,10 +20,10 @@ interface Translation {
 }
 
 interface Score {
-  wpm: number;
-  accuracy: number;
-  date: string;
-  mode: 'normal' | 'challenge';
+  wpm: number
+  accuracy: number
+  date: string
+  mode: 'normal' | 'challenge'
 }
 
 // Traductions UI
@@ -40,7 +40,7 @@ const translations: Record<Language, Translation> = {
     bestTime: 'Meilleur temps',
     challenge: 'Défi 60s',
     startChallenge: 'Commencer le défi',
-    challengeDescription: 'Tapez le plus de mots en 60 secondes!'
+    challengeDescription: 'Tapez le plus de mots en 60 secondes!',
   },
   english: {
     title: 'KeyType - Typing Training',
@@ -54,26 +54,26 @@ const translations: Record<Language, Translation> = {
     bestTime: 'Best Time',
     challenge: '60s Challenge',
     startChallenge: 'Start Challenge',
-    challengeDescription: 'Type as many words as you can in 60 seconds!'
-  }
+    challengeDescription: 'Type as many words as you can in 60 seconds!',
+  },
 }
 
 // Phrases de fallback au cas où l'API échoue
 const FALLBACK_TEXTS = {
   french: [
-    "Le chat dort sur le canapé.",
-    "JavaScript est un langage puissant.",
-    "Paris est la capitale de la France.",
-    "La pratique rend parfait.",
-    "Vue.js est un framework progressif."
+    'Le chat dort sur le canapé.',
+    'JavaScript est un langage puissant.',
+    'Paris est la capitale de la France.',
+    'La pratique rend parfait.',
+    'Vue.js est un framework progressif.',
   ],
   english: [
-    "The quick brown fox jumps over the lazy dog.",
-    "TypeScript improves code quality.",
-    "Practice makes perfect.",
-    "London is the capital of England.",
-    "Programming is an art and a science."
-  ]
+    'The quick brown fox jumps over the lazy dog.',
+    'TypeScript improves code quality.',
+    'Practice makes perfect.',
+    'London is the capital of England.',
+    'Programming is an art and a science.',
+  ],
 }
 
 // État du jeu persistant
@@ -111,9 +111,9 @@ const backspaceActive = ref(false)
 // Mapping des touches spéciales
 const specialKeys = {
   ' ': 'space',
-  'Enter': 'enter',
-  'Backspace': 'backspace',
-  'Shift': 'shift'
+  Enter: 'enter',
+  Backspace: 'backspace',
+  Shift: 'shift',
 }
 
 // Computed properties
@@ -142,10 +142,14 @@ const fetchRandomText = async (): Promise<string> => {
       return data.content
     }
 
-    const response = await fetch('https://jsonplaceholder.typicode.com/posts/' + Math.floor(Math.random() * 100))
+    const response = await fetch(
+      'https://jsonplaceholder.typicode.com/posts/' + Math.floor(Math.random() * 100),
+    )
     const data = await response.json()
-    return data.body?.split('\n')[0]?.substring(0, 120) || FALLBACK_TEXTS.french[Math.floor(Math.random() * FALLBACK_TEXTS.french.length)]
-
+    return (
+      data.body?.split('\n')[0]?.substring(0, 120) ||
+      FALLBACK_TEXTS.french[Math.floor(Math.random() * FALLBACK_TEXTS.french.length)]
+    )
   } catch (error) {
     console.warn('API unavailable, using fallback texts:', error)
     const texts = language.value === 'french' ? FALLBACK_TEXTS.french : FALLBACK_TEXTS.english
@@ -156,16 +160,16 @@ const fetchRandomText = async (): Promise<string> => {
 }
 
 const initGame = async () => {
-  currentText.value = await fetchRandomText();
-  userInput.value = '';
-  startTime.value = Date.now();
-  errors.value = 0;
-  totalKeystrokes.value = 0;
-  wpm.value = 0;
+  currentText.value = await fetchRandomText()
+  userInput.value = ''
+  startTime.value = Date.now()
+  errors.value = 0
+  totalKeystrokes.value = 0
+  wpm.value = 0
 
   // Réinitialise le compte à rebours à chaque nouvelle phrase
-  resetCountdown();
-};
+  resetCountdown()
+}
 
 const calculateWPM = () => {
   if (!startTime.value) return 0
@@ -175,11 +179,11 @@ const calculateWPM = () => {
 }
 
 const startChallenge = () => {
-  challengeMode.value = true;
-  score.value = 0;
-  challengeTimeLeft.value = 60;
-  startAutoCountdown(); // Démarre le compte à rebours
-  initGame();
+  challengeMode.value = true
+  score.value = 0
+  challengeTimeLeft.value = 60
+  startAutoCountdown() // Démarre le compte à rebours
+  initGame()
 
   if (challengeTimer.value) {
     clearInterval(challengeTimer.value)
@@ -202,29 +206,29 @@ const endChallenge = () => {
   if (score.value > bestTime.value) {
     bestTime.value = score.value
   }
-  stopCountdown(); // Arrête le compte à rebours
+  stopCountdown() // Arrête le compte à rebours
 }
 
 const resetGame = () => {
   if (challengeMode.value) {
-    endChallenge();
+    endChallenge()
   }
 
-  // Réinitialise le compte à rebours
-  resetCountdown();
+  // Réinitialise le compte à rebours réactive la saisie
+  resetCountdown()
 
-  score.value = 0;
-  wpm.value = 0;
-  errors.value = 0;
-  totalKeystrokes.value = 0;
-  initGame();
-};
+  score.value = 0
+  wpm.value = 0
+  errors.value = 0
+  totalKeystrokes.value = 0
+  isInputDisabled.value = false // Assurance supplémentaire
+  initGame()
+}
 
 const saveScore = (newScore: Omit<Score, 'date'>) => {
-  scores.value = [
-    ...scores.value,
-    { ...newScore, date: new Date().toISOString() }
-  ].sort((a, b) => b.wpm - a.wpm).slice(0, 10)
+  scores.value = [...scores.value, { ...newScore, date: new Date().toISOString() }]
+    .sort((a, b) => b.wpm - a.wpm)
+    .slice(0, 10)
 }
 
 const changeLanguage = async (lang: Language) => {
@@ -238,20 +242,23 @@ const shareScore = () => {
     : `${t.value.score}: ${score.value} | WPM: ${wpm.value} | ${t.value.accuracy}: ${accuracy.value}%`
 
   if (navigator.share) {
-    navigator.share({
-      title: 'KeyType - Score',
-      text: text
-    }).catch(error => {
-      console.error('Erreur lors du partage:', error)
-      fallbackShare(text)
-    })
+    navigator
+      .share({
+        title: 'KeyType - Score',
+        text: text,
+      })
+      .catch((error) => {
+        console.error('Erreur lors du partage:', error)
+        fallbackShare(text)
+      })
   } else {
     fallbackShare(text)
   }
 }
 
 const fallbackShare = (text: string) => {
-  navigator.clipboard.writeText(text)
+  navigator.clipboard
+    .writeText(text)
     .then(() => alert('Score copié dans le presse-papier!'))
     .catch(() => alert(text))
 }
@@ -292,7 +299,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
   const key = event.key
   const keyLower = key.toLowerCase()
 
-  // 1. Gestion de la protection anti-triche
+  // Gestion de la protection anti-triche
   const ctrlKey = event.ctrlKey || event.metaKey
   if (ctrlKey && ['c', 'v', 'x', 'a'].includes(keyLower)) {
     event.preventDefault()
@@ -304,12 +311,12 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return
   }
 
-  if (key === 'F10' && event.shiftKey || key === 'ContextMenu') {
+  if ((key === 'F10' && event.shiftKey) || key === 'ContextMenu') {
     event.preventDefault()
     return
   }
 
-  // 2. Gestion du clavier visuel
+  // Gestion du clavier visuel
   if (event.ctrlKey || event.altKey || event.metaKey) return
 
   // Gestion des touches spéciales
@@ -361,6 +368,8 @@ const handleKeyUp = (event: KeyboardEvent) => {
 }
 
 const checkInput = () => {
+  if (isInputDisabled.value) return // Ne rien faire si désactivé
+
   isTyping.value = true
   totalKeystrokes.value++
 
@@ -394,7 +403,7 @@ const checkInput = () => {
     saveScore({
       wpm: wpm.value,
       accuracy: accuracy.value,
-      mode: challengeMode.value ? 'challenge' : 'normal'
+      mode: challengeMode.value ? 'challenge' : 'normal',
     })
 
     if (navigator.vibrate) {
@@ -444,12 +453,12 @@ watch(bestTime, (newTime) => {
 watch(userInput, (newValue, oldValue) => {
   // Lance le compte à rebours au premier caractère tapé
   if (newValue.length === 1 && oldValue.length === 0) {
-    startAutoCountdown();
+    startAutoCountdown()
   }
 
   // Réinitialise le compte à rebours quand le texte est complété
   if (newValue === currentText.value) {
-    resetCountdown();
+    resetCountdown()
   }
 
   if (newValue.length > currentText.value.length) {
@@ -463,59 +472,67 @@ watch(userInput, (newValue, oldValue) => {
 })
 
 // ==================== COMPTE À REBOURS AUTOMATIQUE ====================
-const countdown = ref(60); // 60 secondes par défaut
-const isCountdownRunning = ref(false);
-let countdownInterval: number | null = null;
+const countdown = ref(60) // 60 secondes par défaut
+const isCountdownRunning = ref(false)
+let countdownInterval: number | null = null
 
 // Démarrer le compte à rebours automatiquement
 const startAutoCountdown = () => {
   if (!isCountdownRunning.value && countdown.value > 0) {
-    isCountdownRunning.value = true;
+    isCountdownRunning.value = true
 
     if (countdownInterval) {
-      clearInterval(countdownInterval);
+      clearInterval(countdownInterval)
     }
 
     countdownInterval = setInterval(() => {
-      countdown.value--;
+      countdown.value--
 
       if (countdown.value <= 0) {
-        stopCountdown();
-        handleCountdownEnd();
+        stopCountdown()
+        handleCountdownEnd()
       }
-    }, 1000) as unknown as number;
+    }, 1000) as unknown as number
   }
-};
+}
 
 // Arrêter le compte à rebours
 const stopCountdown = () => {
   if (countdownInterval) {
-    clearInterval(countdownInterval);
-    countdownInterval = null;
+    clearInterval(countdownInterval)
+    countdownInterval = null
   }
-  isCountdownRunning.value = false;
-};
+  isCountdownRunning.value = false
+}
 
 // Réinitialiser le compte à rebours
 const resetCountdown = () => {
-  stopCountdown();
-  countdown.value = 60;
-};
+  stopCountdown()
+  countdown.value = 60
+  isInputDisabled.value = false // Réactive la saisie
+}
 
 // Actions à la fin du compte à rebours
 const handleCountdownEnd = () => {
-  console.log("Temps écoulé !");
-  // Vous pouvez ajouter des actions spécifiques ici si besoin
-};
+  console.log('Temps écoulé !')
+
+  isInputDisabled.value = true // Désactive la saisie
+
+  // juste pour voir l'effet : vibration ou feedback
+  if (navigator.vibrate) {
+    navigator.vibrate(200)
+  }
+}
 
 // Formatage du temps (mm:ss)
 const formattedCountdown = computed(() => {
-  const minutes = Math.floor(countdown.value / 60);
-  const seconds = countdown.value % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-});
+  const minutes = Math.floor(countdown.value / 60)
+  const seconds = countdown.value % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+})
 
-// Lifecycle hooks
+const isInputDisabled = ref(false)
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('keyup', handleKeyUp)
@@ -551,97 +568,88 @@ onUnmounted(() => {
         <div class="text-2xl font-bold text-green-600">{{ accuracy }}%</div>
       </div>
 
-<!-- Carte compte à rebours automatique -->
-  <div class="bg-purple-50 p-3 rounded-lg text-center transition-all duration-300 border border-purple-200"
-       :class="{
-         'bg-red-100 border-red-200': countdown <= 10,
-         'animate-pulse': countdown <= 5,
-         'bg-green-100 border-green-200': !isCountdownRunning && countdown === 60
-       }">
-    <div class="flex items-center gap-2 justify-center mb-1">
-      <i class="fas fa-stopwatch"
-         :class="{
-           'text-purple-500': countdown > 10,
-           'text-red-500': countdown <= 10,
-           'text-green-500': !isCountdownRunning && countdown === 60
-         }"></i>
-      <div class="text-sm font-medium"
-           :class="{
-             'text-purple-600': countdown > 10,
-             'text-red-600': countdown <= 10,
-             'text-green-600': !isCountdownRunning && countdown === 60
-           }">
-        {{ countdown > 0 ? 'Temps restant' : 'Terminé!' }}
+      <!-- Carte compte à rebours automatique -->
+      <div class="bg-purple-50 p-3 rounded-lg text-center transition-all duration-300 border border-purple-200" :class="{
+          'bg-red-100 border-red-200': countdown <= 10,
+          'animate-pulse': countdown <= 5,
+          'bg-green-100 border-green-200': !isCountdownRunning && countdown === 60,
+        }">
+        <div class="flex items-center gap-2 justify-center mb-1">
+          <i class="fas fa-stopwatch" :class="{
+              'text-purple-500': countdown > 10,
+              'text-red-500': countdown <= 10,
+              'text-green-500': !isCountdownRunning && countdown === 60,
+            }"></i>
+          <div class="text-sm font-medium" :class="{
+              'text-purple-600': countdown > 10,
+              'text-red-600': countdown <= 10,
+              'text-green-600': !isCountdownRunning && countdown === 60,
+            }">
+            {{ countdown > 0 ? 'Temps restant' : 'Terminé!' }}
+          </div>
+        </div>
+        <div class="text-2xl font-bold" :class="{
+            'text-purple-600': countdown > 10,
+            'text-red-600': countdown <= 10,
+            'text-green-600': !isCountdownRunning && countdown === 60,
+          }">
+          {{ formattedCountdown }}
+        </div>
+        <div class="text-xs text-gray-500 mt-1">
+          {{ isCountdownRunning ? 'En cours...' : 'Commencez à taper' }}
+        </div>
       </div>
-    </div>
-    <div class="text-2xl font-bold"
-         :class="{
-           'text-purple-600': countdown > 10,
-           'text-red-600': countdown <= 10,
-           'text-green-600': !isCountdownRunning && countdown === 60
-         }">
-      {{ formattedCountdown }}
-    </div>
-    <div class="text-xs text-gray-500 mt-1">
-      {{ isCountdownRunning ? 'En cours...' : 'Commencez à taper' }}
-    </div>
-  </div>
 
       <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
         <div class="flex items-center gap-2 mb-2">
           <i class="fas fa-star text-amber-500"></i>
           <div class="text-sm text-gray-500">{{ challengeMode ? t.bestTime : t.highScore }}</div>
         </div>
-        <div class="text-2xl font-bold text-amber-600">{{ challengeMode ? bestTime : highScore }}</div>
+        <div class="text-2xl font-bold text-amber-600">
+          {{ challengeMode ? bestTime : highScore }}
+        </div>
       </div>
     </div>
 
-<!-- Zone de texte avec textarea -->
-  <div class="relative mb-8">
-    <!-- Bulle flottante -->
-    <div v-if="userInput.length === 0" class="absolute inset-x-0 top-13 flex items-center justify-center pointer-events-none z-10">
-      <div class="bg-green-200 border border-gray-200 rounded-lg px-4 py-2 shadow-lg flex items-center gap-2 animate-pulse floating-bubble">
-        <i class="fas fa-keyboard text-blue-500"></i>
-        <span class="text-gray-700 font-medium">{{ t.startTyping }}</span>
-      </div>
-    </div>
-
-    <!-- Container relatif -->
-    <div class="relative bg-white border-2 border-gray-300 rounded-xl focus-within:border-blue-400 transition-colors">
-      <!-- Texte d'arrière-plan -->
-      <div class="absolute inset-0 p-4 text-lg font-mono text-gray-300 pointer-events-none select-none z-0 leading-relaxed whitespace-pre-wrap">
-        <span
-          v-for="(char, index) in currentText"
-          :key="index"
-          :class="getCharacterClass(index)"
-          class="character"
-        >
-          {{ char }}
-        </span>
+    <!-- Zone de texte avec textarea -->
+    <div class="relative mb-8">
+      <!-- Bulle flottante -->
+      <div v-if="userInput.length === 0"
+        class="absolute inset-x-0 top-13 flex items-center justify-center pointer-events-none z-10">
+        <div
+          class="bg-green-200 border border-gray-200 rounded-lg px-4 py-2 shadow-lg flex items-center gap-2 animate-pulse floating-bubble">
+          <i class="fas fa-keyboard text-blue-500"></i>
+          <span class="text-gray-700 font-medium">{{ t.startTyping }}</span>
+        </div>
       </div>
 
-      <!-- Textarea transparent -->
-      <textarea
-        v-model="userInput"
-        @input="checkInput"
-        class="w-full h-15 p-4 text-lg font-mono bg-transparent outline-none resize-none relative z-10 caret-blue-500 text-transparent"
-        :placeholder="t.startTyping"
-        :disabled="challengeMode && challengeTimeLeft <= 0"
-        autocapitalize="off"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-        ref="textInput"
-      ></textarea>
-    </div>
+      <!-- Container relatif -->
+      <div class="relative bg-white border-2 border-gray-300 rounded-xl focus-within:border-blue-400 transition-colors">
+        <!-- Texte d'arrière-plan -->
+        <div
+          class="absolute inset-0 p-4 text-lg font-mono text-gray-300 pointer-events-none select-none z-0 leading-relaxed whitespace-pre-wrap">
+          <span v-for="(char, index) in currentText" :key="index" :class="getCharacterClass(index)" class="character">
+            {{ char }}
+          </span>
+        </div>
 
-    <!-- Indicateur de progression -->
-    <div class="mt-2 flex justify-between items-center text-sm text-gray-500">
-      <span>{{ userInput.length }}/{{ currentText.length }} caractères</span>
-      <span v-if="wpm > 0">{{ wpm }} MPM</span>
-      <span v-else>Prêt</span>
+        <!-- Textarea transparent -->
+        <textarea v-model="userInput" @input="checkInput" @paste="handlePaste" @copy="handleCopy" @cut="handleCut"
+          @dragover="handleDragOver" @drop="handleDrop" @contextmenu="handleContextMenu" @keydown="handleKeyDown"
+          class="w-full h-15 p-4 text-lg font-mono bg-transparent outline-none resize-none relative z-10 caret-blue-500 text-transparent"
+          :class="{
+            'opacity-50 cursor-not-allowed': isInputDisabled,
+          }" :placeholder="t.startTyping" :disabled="isInputDisabled || (challengeMode && challengeTimeLeft <= 0)"
+          autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" ref="textInput"></textarea>
+      </div>
+
+      <!-- Indicateur de progression -->
+      <div class="mt-2 flex justify-between items-center text-sm text-gray-500">
+        <span>{{ userInput.length }}/{{ currentText.length }} caractères</span>
+        <span v-if="wpm > 0">{{ wpm }} MPM</span>
+        <span v-else>Prêt</span>
+      </div>
     </div>
-  </div>
 
     <!-- Boutons d'action -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -687,108 +695,292 @@ onUnmounted(() => {
 
   <!-- Animation de réussite -->
   <transition name="success">
-    <div
-      v-if="showSuccessAnimation"
-      class="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
-    >
+    <div v-if="showSuccessAnimation" class="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
       <div class="text-6xl text-green-500 animate-bounce">
         <i class="fas fa-check-circle"></i>
       </div>
     </div>
   </transition>
 
-<!-- Clavier AZERTY avec classes Tailwind directes -->
-<div class="keyboard-container mt-8 bg-gray-100 rounded-2xl p-4 shadow-lg border border-gray-200">
-  <!-- Ligne 1 -->
-  <div class="keyboard-row flex justify-center gap-1 mb-2">
-    <div class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700">²</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">&</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">é</div>
-    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">"</div>
-    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">'</div>
-    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200">(</div>
-    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200">-</div>
-    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200">è</div>
-    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">_</div>
-    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">ç</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">à</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">)</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">=</div>
-    <div class="key key-grey key-special h-12 w-[60px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pr-2 justify-end text-xs uppercase" :class="{ 'key-active': backspaceActive }">
-      ←
-      <span v-if="backspaceActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">←</span>
+  <!-- Clavier AZERTY avec classes Tailwind directes -->
+  <div class="keyboard-container mt-8 bg-gray-100 rounded-2xl p-4 shadow-lg border border-gray-200">
+    <!-- Ligne 1 -->
+    <div class="keyboard-row flex justify-center gap-1 mb-2">
+      <div
+        class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700">
+        ²
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        &
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        é
+      </div>
+      <div
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">
+        "
+      </div>
+      <div
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">
+        '
+      </div>
+      <div
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200">
+        (
+      </div>
+      <div
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200">
+        -
+      </div>
+      <div
+        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200">
+        è
+      </div>
+      <div
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">
+        _
+      </div>
+      <div
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">
+        ç
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        à
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        )
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        =
+      </div>
+      <div
+        class="key key-grey key-special h-12 w-[60px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pr-2 justify-end text-xs uppercase"
+        :class="{ 'key-active': backspaceActive }">
+        ←
+        <span v-if="backspaceActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">←</span>
+      </div>
+    </div>
+
+    <!-- Ligne 2 -->
+    <div class="keyboard-row flex justify-center gap-1 mb-2">
+      <div
+        class="key key-grey key-special h-12 w-[60px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pl-2 justify-start text-xs uppercase">
+        Tab
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+        :class="{ 'key-active': activeKey === 'a' }">
+        a
+      </div>
+      <div
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
+        :class="{ 'key-active': activeKey === 'z' }">
+        z
+      </div>
+      <div
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
+        :class="{ 'key-active': activeKey === 'e' }">
+        e
+      </div>
+      <div
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
+        :class="{ 'key-active': activeKey === 'r' }">
+        r
+      </div>
+      <div
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
+        :class="{ 'key-active': activeKey === 't' }">
+        t
+      </div>
+      <div
+        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
+        :class="{ 'key-active': activeKey === 'y' }">
+        y
+      </div>
+      <div
+        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
+        :class="{ 'key-active': activeKey === 'u' }">
+        u
+      </div>
+      <div
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
+        :class="{ 'key-active': activeKey === 'i' }">
+        i
+      </div>
+      <div
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
+        :class="{ 'key-active': activeKey === 'o' }">
+        o
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+        :class="{ 'key-active': activeKey === 'p' }">
+        p
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        ^
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        $
+      </div>
+      <div
+        class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700">
+        *
+      </div>
+    </div>
+
+    <!-- Ligne 3 -->
+    <div class="keyboard-row flex justify-center gap-1 mb-2">
+      <div
+        class="key key-grey key-special h-12 w-[74px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-3 pl-2 justify-start text-xs uppercase">
+        Verr Maj
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+        :class="{ 'key-active': activeKey === 'q' }">
+        q
+      </div>
+      <div
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
+        :class="{ 'key-active': activeKey === 's' }">
+        s
+      </div>
+      <div
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
+        :class="{ 'key-active': activeKey === 'd' }">
+        d
+      </div>
+      <div
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
+        :class="{ 'key-active': activeKey === 'f' }">
+        f
+      </div>
+      <div
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
+        :class="{ 'key-active': activeKey === 'g' }">
+        g
+      </div>
+      <div
+        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
+        :class="{ 'key-active': activeKey === 'h' }">
+        h
+      </div>
+      <div
+        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
+        :class="{ 'key-active': activeKey === 'j' }">
+        j
+      </div>
+      <div
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
+        :class="{ 'key-active': activeKey === 'k' }">
+        k
+      </div>
+      <div
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
+        :class="{ 'key-active': activeKey === 'l' }">
+        l
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+        :class="{ 'key-active': activeKey === 'm' }">
+        m
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        ù
+      </div>
+      <div
+        class="key key-enter key-special h-12 w-[74px] flex items-center justify-center rounded-lg font-medium text-sm bg-blue-100 text-blue-800 border border-blue-200 pr-2 justify-end text-xs uppercase"
+        :class="{ 'key-active': enterActive }">
+        Entrée
+        <span v-if="enterActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">↵</span>
+      </div>
+    </div>
+
+    <!-- Ligne 4 -->
+    <div class="keyboard-row flex justify-center gap-1 mb-2">
+      <div
+        class="key key-grey key-special h-12 w-[95px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-2 justify-start text-xs uppercase"
+        :class="{ 'key-active': shiftActive }">
+        Maj
+        <span v-if="shiftActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">⇧</span>
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+        :class="{ 'key-active': activeKey === 'w' }">
+        w
+      </div>
+      <div
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
+        :class="{ 'key-active': activeKey === 'x' }">
+        x
+      </div>
+      <div
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
+        :class="{ 'key-active': activeKey === 'c' }">
+        c
+      </div>
+      <div
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
+        :class="{ 'key-active': activeKey === 'v' }">
+        v
+      </div>
+      <div
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
+        :class="{ 'key-active': activeKey === 'b' }">
+        b
+      </div>
+      <div
+        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
+        :class="{ 'key-active': activeKey === 'n' }">
+        n
+      </div>
+      <div
+        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200">
+        ,
+      </div>
+      <div
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">
+        ;
+      </div>
+      <div
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">
+        :
+      </div>
+      <div
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        !
+      </div>
+      <div
+        class="key key-grey key-special h-12 w-[95px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-2 justify-start text-xs uppercase"
+        :class="{ 'key-active': shiftActive }">
+        Maj
+        <span v-if="shiftActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">⇧</span>
+      </div>
+    </div>
+
+    <!-- Ligne 5 - Barre d'espace -->
+    <div class="keyboard-row flex justify-center gap-1">
+      <div
+        class="key key-grey key-special h-12 w-[220px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pl-2 pr-4 justify-start text-xs uppercase"
+        :class="{ 'key-active': spaceActive }">
+        Espace
+        <span v-if="spaceActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">␣</span>
+      </div>
     </div>
   </div>
-
-  <!-- Ligne 2 -->
-  <div class="keyboard-row flex justify-center gap-1 mb-2">
-    <div class="key key-grey key-special h-12 w-[60px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pl-2 justify-start text-xs uppercase">Tab</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'a' }">a</div>
-    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 'z' }">z</div>
-    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'e' }">e</div>
-    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'r' }">r</div>
-    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 't' }">t</div>
-    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'y' }">y</div>
-    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'u' }">u</div>
-    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'i' }">i</div>
-    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 'o' }">o</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'p' }">p</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">^</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">$</div>
-    <div class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700">*</div>
-  </div>
-
-  <!-- Ligne 3 -->
-  <div class="keyboard-row flex justify-center gap-1 mb-2">
-    <div class="key key-grey key-special h-12 w-[74px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-3 pl-2 justify-start text-xs uppercase">Verr Maj</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'q' }">q</div>
-    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 's' }">s</div>
-    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'd' }">d</div>
-    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'f' }">f</div>
-    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'g' }">g</div>
-    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'h' }">h</div>
-    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'j' }">j</div>
-    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'k' }">k</div>
-    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 'l' }">l</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'm' }">m</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">ù</div>
-    <div class="key key-enter key-special h-12 w-[74px] flex items-center justify-center rounded-lg font-medium text-sm bg-blue-100 text-blue-800 border border-blue-200 pr-2 justify-end text-xs uppercase" :class="{ 'key-active': enterActive }">
-      Entrée
-      <span v-if="enterActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">↵</span>
-    </div>
-  </div>
-
-  <!-- Ligne 4 -->
-  <div class="keyboard-row flex justify-center gap-1 mb-2">
-    <div class="key key-grey key-special h-12 w-[95px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-2 justify-start text-xs uppercase" :class="{ 'key-active': shiftActive }">
-      Maj
-      <span v-if="shiftActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">⇧</span>
-    </div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200" :class="{ 'key-active': activeKey === 'w' }">w</div>
-    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200" :class="{ 'key-active': activeKey === 'x' }">x</div>
-    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200" :class="{ 'key-active': activeKey === 'c' }">c</div>
-    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'v' }">v</div>
-    <div class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200" :class="{ 'key-active': activeKey === 'b' }">b</div>
-    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200" :class="{ 'key-active': activeKey === 'n' }">n</div>
-    <div class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200">,</div>
-    <div class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">;</div>
-    <div class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">:</div>
-    <div class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">!</div>
-    <div class="key key-grey key-special h-12 w-[95px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-2 justify-start text-xs uppercase" :class="{ 'key-active': shiftActive }">
-      Maj
-      <span v-if="shiftActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">⇧</span>
-    </div>
-  </div>
-
-  <!-- Ligne 5 - Barre d'espace -->
-  <div class="keyboard-row flex justify-center gap-1">
-    <div class="key key-grey key-special h-12 w-[220px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pl-2 pr-4 justify-start text-xs uppercase" :class="{ 'key-active': spaceActive }">
-      Espace
-      <span v-if="spaceActive" class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">␣</span>
-    </div>
-  </div>
-</div>
-
 </template>
 
 <style>
@@ -797,7 +989,8 @@ onUnmounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -813,9 +1006,16 @@ onUnmounted(() => {
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }
 
 /* Désactiver la sélection de texte dans le champ */
@@ -864,24 +1064,45 @@ onUnmounted(() => {
 
 /* Animation pour le caractère actuel */
 @keyframes current-char-pulse {
-  0%, 100% { background-color: #dbeafe; }
-  50% { background-color: #bfdbfe; }
+  0%,
+  100% {
+    background-color: #dbeafe;
+  }
+  50% {
+    background-color: #bfdbfe;
+  }
 }
 
 /* Animation pour les erreurs */
 @keyframes incorrect-typing {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  50% { transform: translateX(3px); }
-  75% { transform: translateX(-3px); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 /* Effet de "tap" sur les caractères */
 @keyframes tap-effect {
-  0% { transform: scale(1); }
-  50% { transform: scale(0.95); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .character.typed {
@@ -900,8 +1121,14 @@ onUnmounted(() => {
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Container avec effet de focus */
@@ -990,16 +1217,51 @@ onUnmounted(() => {
 }
 
 /* Animation de frappe */
+
 .key-active {
-  animation: key-press 0.3s ease;
-  transform: scale(0.95);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: key-press-pop 0.18s cubic-bezier(0.4, 0.8, 0.2, 1);
+  background-color: #3b82f6 !important; /* Bleu vif */
+  color: #fff !important;
+  box-shadow: 0 0 16px 4px rgba(59, 130, 246, 0.35), 0 2px 8px rgba(0,0,0,0.12);
+  transform: scale(1.08);
+  z-index: 2;
+  border: 2px solid #2563eb;
+  transition: background 0.1s, color 0.1s, box-shadow 0.1s, transform 0.1s;
+}
+
+@keyframes key-press-pop {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(59, 130, 246, 0);
+    background-color: #3b82f6;
+  }
+  40% {
+    transform: scale(1.12);
+    box-shadow: 0 0 24px 8px rgba(59, 130, 246, 0.45);
+    background-color: #2563eb;
+  }
+  80% {
+    transform: scale(0.98);
+    box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.25);
+    background-color: #3b82f6;
+  }
+  100% {
+    transform: scale(1.08);
+    box-shadow: 0 0 16px 4px rgba(59, 130, 246, 0.35);
+    background-color: #3b82f6;
+  }
 }
 
 @keyframes key-press {
-  0% { transform: scale(1); }
-  50% { transform: scale(0.95); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Indicateur de doigt */
@@ -1020,8 +1282,13 @@ onUnmounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Layout responsive */
@@ -1050,9 +1317,16 @@ onUnmounted(() => {
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
 }
 
 /* Curseur personnalisé */
@@ -1062,18 +1336,24 @@ onUnmounted(() => {
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Champ de saisie transparent */
-input[type="text"] {
+input[type='text'] {
   color: transparent !important;
   caret-color: #3b82f6; /* Couleur du curseur bleu */
 }
 
 /* Surlignement de la sélection */
-input[type="text"]::selection {
+input[type='text']::selection {
   background: rgba(59, 130, 246, 0.3);
 }
 
@@ -1083,8 +1363,13 @@ input[type="text"]::selection {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 /* Adaptation responsive */
@@ -1093,11 +1378,10 @@ input[type="text"]::selection {
     font-size: 16px; /* Taille de police fixe pour mobile */
   }
 
-  input[type="text"] {
+  input[type='text'] {
     font-size: 16px; /* Évite le zoom sur iOS */
   }
 }
-
 
 /* Pour la version textarea */
 textarea {
@@ -1136,7 +1420,8 @@ textarea::-webkit-scrollbar-thumb:hover {
 
 /* Animation de pulsation pour les dernières secondes */
 @keyframes critical-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 rgba(239, 68, 68, 0);
   }
@@ -1154,5 +1439,4 @@ textarea::-webkit-scrollbar-thumb:hover {
 .countdown-transition {
   transition: all 0.3s ease-in-out;
 }
-
 </style>
