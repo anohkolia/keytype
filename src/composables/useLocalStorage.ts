@@ -12,7 +12,10 @@ export function useLocalStorage<T>(key: string, defaultValue: T) {
       const parsed = JSON.parse(storedValue)
 
       // Validation basique du type (optionnel)
-      if (typeof parsed !== typeof defaultValue && Array.isArray(parsed) !== Array.isArray(defaultValue)) {
+      if (
+        typeof parsed !== typeof defaultValue &&
+        Array.isArray(parsed) !== Array.isArray(defaultValue)
+      ) {
         console.warn(`Type mismatch for ${key} in localStorage, using default value`)
         return defaultValue
       }
@@ -42,7 +45,7 @@ export function useLocalStorage<T>(key: string, defaultValue: T) {
         }
       }
     },
-    { deep: true }
+    { deep: true },
   )
 
   return { value }
