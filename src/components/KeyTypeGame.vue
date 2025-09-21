@@ -181,7 +181,7 @@ const calculateWPM = () => {
 const startChallenge = () => {
   challengeMode.value = true
   score.value = 0
-  challengeTimeLeft.value = 60
+  challengeTimeLeft.value = 30
   startAutoCountdown() // Démarre le compte à rebours
   initGame()
 
@@ -472,7 +472,7 @@ watch(userInput, (newValue, oldValue) => {
 })
 
 // ==================== COMPTE À REBOURS AUTOMATIQUE ====================
-const countdown = ref(60) // 60 secondes par défaut
+const countdown = ref(30) // 30 secondes par défaut
 const isCountdownRunning = ref(false)
 let countdownInterval: number | null = null
 
@@ -508,7 +508,7 @@ const stopCountdown = () => {
 // Réinitialiser le compte à rebours
 const resetCountdown = () => {
   stopCountdown()
-  countdown.value = 60
+  countdown.value = 30
   isInputDisabled.value = false // Réactive la saisie
 }
 
