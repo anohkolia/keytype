@@ -27,8 +27,15 @@ import KeyTypeGame from './components/KeyTypeGame.vue'
     <footer class="max-w-4xl mx-auto mt-16 text-center">
       <div class="border-t border-gray-200 pt-8">
         <p class="text-sm text-gray-500">
-          <i class="fas fa-heart text-red-500 mr-1"></i>
           © {{ new Date().getFullYear() }} TypeKey - Développé pour les amateurs de dactylographie
+          - par
+          <a
+            href="https://github.com/anohkolia"
+            target="_blank"
+            rel="noopener"
+            style="color: #3b82f6"
+            >anohkolia</a
+          >.
         </p>
       </div>
     </footer>

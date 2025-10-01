@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://typekey.netlify.app/sitemap.xml
