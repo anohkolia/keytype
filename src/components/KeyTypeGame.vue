@@ -181,7 +181,7 @@ const calculateWPM = () => {
 const startChallenge = () => {
   challengeMode.value = true
   score.value = 0
-  challengeTimeLeft.value = 60
+  challengeTimeLeft.value = 30
   startAutoCountdown() // Démarre le compte à rebours
   initGame()
 
@@ -472,7 +472,7 @@ watch(userInput, (newValue, oldValue) => {
 })
 
 // ==================== COMPTE À REBOURS AUTOMATIQUE ====================
-const countdown = ref(60) // 60 secondes par défaut
+const countdown = ref(30) // 30 secondes par défaut
 const isCountdownRunning = ref(false)
 let countdownInterval: number | null = null
 
@@ -508,7 +508,7 @@ const stopCountdown = () => {
 // Réinitialiser le compte à rebours
 const resetCountdown = () => {
   stopCountdown()
-  countdown.value = 60
+  countdown.value = 30
   isInputDisabled.value = false // Réactive la saisie
 }
 
@@ -552,7 +552,9 @@ onUnmounted(() => {
   <div class="max-w-4xl mx-auto">
     <!-- Cartes de statistiques -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+      <div
+        class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow"
+      >
         <div class="flex items-center gap-2 mb-2">
           <i class="fas fa-trophy text-blue-500"></i>
           <div class="text-sm text-gray-500">{{ t.score }}</div>
@@ -560,7 +562,9 @@ onUnmounted(() => {
         <div class="text-2xl font-bold text-blue-600">{{ score }}</div>
       </div>
 
-      <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+      <div
+        class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow"
+      >
         <div class="flex items-center gap-2 mb-2">
           <i class="fas fa-bullseye text-green-500"></i>
           <div class="text-sm text-gray-500">{{ t.accuracy }}</div>
@@ -569,30 +573,42 @@ onUnmounted(() => {
       </div>
 
       <!-- Carte compte à rebours automatique -->
-      <div class="bg-purple-50 p-3 rounded-lg text-center transition-all duration-300 border border-purple-200" :class="{
+      <div
+        class="bg-purple-50 p-3 shadow-lg hover:shadow-xl transition-shadow rounded-lg text-center transition-all duration-300 border border-purple-200"
+        :class="{
           'bg-red-100 border-red-200': countdown <= 10,
           'animate-pulse': countdown <= 5,
           'bg-green-100 border-green-200': !isCountdownRunning && countdown === 60,
-        }">
+        }"
+      >
         <div class="flex items-center gap-2 justify-center mb-1">
-          <i class="fas fa-stopwatch" :class="{
+          <i
+            class="fas fa-stopwatch"
+            :class="{
               'text-purple-500': countdown > 10,
               'text-red-500': countdown <= 10,
               'text-green-500': !isCountdownRunning && countdown === 60,
-            }"></i>
-          <div class="text-sm font-medium" :class="{
+            }"
+          ></i>
+          <div
+            class="text-sm font-medium"
+            :class="{
               'text-purple-600': countdown > 10,
               'text-red-600': countdown <= 10,
               'text-green-600': !isCountdownRunning && countdown === 60,
-            }">
+            }"
+          >
             {{ countdown > 0 ? 'Temps restant' : 'Terminé!' }}
           </div>
         </div>
-        <div class="text-2xl font-bold" :class="{
+        <div
+          class="text-2xl font-bold"
+          :class="{
             'text-purple-600': countdown > 10,
             'text-red-600': countdown <= 10,
             'text-green-600': !isCountdownRunning && countdown === 60,
-          }">
+          }"
+        >
           {{ formattedCountdown }}
         </div>
         <div class="text-xs text-gray-500 mt-1">
@@ -600,7 +616,9 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+      <div
+        class="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow"
+      >
         <div class="flex items-center gap-2 mb-2">
           <i class="fas fa-star text-amber-500"></i>
           <div class="text-sm text-gray-500">{{ challengeMode ? t.bestTime : t.highScore }}</div>
@@ -614,33 +632,59 @@ onUnmounted(() => {
     <!-- Zone de texte avec textarea -->
     <div class="relative mb-8">
       <!-- Bulle flottante -->
-      <div v-if="userInput.length === 0"
-        class="absolute inset-x-0 top-13 flex items-center justify-center pointer-events-none z-10">
+      <div
+        v-if="userInput.length === 0"
+        class="absolute inset-x-0 top-13 flex items-center justify-center pointer-events-none z-10"
+      >
         <div
-          class="bg-green-200 border border-gray-200 rounded-lg px-4 py-2 shadow-lg flex items-center gap-2 animate-pulse floating-bubble">
+          class="bg-green-200 border border-gray-200 rounded-lg px-4 py-2 shadow-lg flex items-center gap-2 animate-pulse floating-bubble"
+        >
           <i class="fas fa-keyboard text-blue-500"></i>
           <span class="text-gray-700 font-medium">{{ t.startTyping }}</span>
         </div>
       </div>
 
       <!-- Container relatif -->
-      <div class="relative bg-white border-2 border-gray-300 rounded-xl focus-within:border-blue-400 transition-colors">
+      <div
+        class="relative bg-white border-2 border-gray-300 rounded-xl focus-within:border-blue-400 transition-colors"
+      >
         <!-- Texte d'arrière-plan -->
         <div
-          class="absolute inset-0 p-4 text-lg font-mono text-gray-300 pointer-events-none select-none z-0 leading-relaxed whitespace-pre-wrap">
-          <span v-for="(char, index) in currentText" :key="index" :class="getCharacterClass(index)" class="character">
+          class="absolute inset-0 p-4 text-lg font-mono text-gray-300 pointer-events-none select-none z-0 leading-relaxed whitespace-pre-wrap"
+        >
+          <span
+            v-for="(char, index) in currentText"
+            :key="index"
+            :class="getCharacterClass(index)"
+            class="character"
+          >
             {{ char }}
           </span>
         </div>
 
         <!-- Textarea transparent -->
-        <textarea v-model="userInput" @input="checkInput" @paste="handlePaste" @copy="handleCopy" @cut="handleCut"
-          @dragover="handleDragOver" @drop="handleDrop" @contextmenu="handleContextMenu" @keydown="handleKeyDown"
+        <textarea
+          v-model="userInput"
+          @input="checkInput"
+          @paste="handlePaste"
+          @copy="handleCopy"
+          @cut="handleCut"
+          @dragover="handleDragOver"
+          @drop="handleDrop"
+          @contextmenu="handleContextMenu"
+          @keydown="handleKeyDown"
           class="w-full h-15 p-4 text-lg font-mono bg-transparent outline-none resize-none relative z-10 caret-blue-500 text-transparent"
           :class="{
             'opacity-50 cursor-not-allowed': isInputDisabled,
-          }" :placeholder="t.startTyping" :disabled="isInputDisabled || (challengeMode && challengeTimeLeft <= 0)"
-          autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" ref="textInput"></textarea>
+          }"
+          :placeholder="t.startTyping"
+          :disabled="isInputDisabled || (challengeMode && challengeTimeLeft <= 0)"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          ref="textInput"
+        ></textarea>
       </div>
 
       <!-- Indicateur de progression -->
@@ -653,20 +697,27 @@ onUnmounted(() => {
 
     <!-- Boutons d'action -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <button @click="resetGame"
-        class="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:shadow-md transition-all font-medium">
+      <button
+        @click="resetGame"
+        class="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:shadow-md transition-all font-medium"
+      >
         <i class="fas fa-redo-alt"></i>
         {{ t.reset }}
       </button>
 
-      <button v-if="!challengeMode" @click="startChallenge"
-        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium">
+      <button
+        v-if="!challengeMode"
+        @click="startChallenge"
+        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium"
+      >
         <i class="fas fa-stopwatch"></i>
         {{ t.startChallenge }}
       </button>
 
-      <button @click="shareScore"
-        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium">
+      <button
+        @click="shareScore"
+        class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-medium"
+      >
         <i class="fas fa-share-alt"></i>
         {{ t.share }}
       </button>
@@ -684,7 +735,8 @@ onUnmounted(() => {
       <div class="w-full bg-gray-200 rounded-full h-2">
         <div
           class="bg-gradient-to-r from-amber-400 to-orange-500 h-2 rounded-full transition-all duration-1000 ease-out"
-          :style="{ width: `${(challengeTimeLeft / 60) * 100}%` }"></div>
+          :style="{ width: `${(challengeTimeLeft / 60) * 100}%` }"
+        ></div>
       </div>
       <p class="text-sm text-gray-600 mt-2 flex items-center gap-1">
         <i class="fas fa-info-circle text-blue-400"></i>
@@ -695,7 +747,10 @@ onUnmounted(() => {
 
   <!-- Animation de réussite -->
   <transition name="success">
-    <div v-if="showSuccessAnimation" class="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
+    <div
+      v-if="showSuccessAnimation"
+      class="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
+    >
       <div class="text-6xl text-green-500 animate-bounce">
         <i class="fas fa-check-circle"></i>
       </div>
@@ -707,132 +762,163 @@ onUnmounted(() => {
     <!-- Ligne 1 -->
     <div class="keyboard-row flex justify-center gap-1 mb-2">
       <div
-        class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700">
+        class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700"
+      >
         ²
       </div>
       <div
-        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+      >
         &
       </div>
       <div
-        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+      >
         é
       </div>
       <div
-        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
+      >
         "
       </div>
       <div
-        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
+      >
         '
       </div>
       <div
-        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200">
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
+      >
         (
       </div>
       <div
-        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200">
+        class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
+      >
         -
       </div>
       <div
-        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200">
+        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
+      >
         è
       </div>
       <div
-        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
+      >
         _
       </div>
       <div
-        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
+      >
         ç
       </div>
       <div
-        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+      >
         à
       </div>
       <div
-        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+      >
         )
       </div>
       <div
-        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+      >
         =
       </div>
       <div
         class="key key-grey key-special h-12 w-[60px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pr-2 justify-end text-xs uppercase"
-        :class="{ 'key-active': backspaceActive }">
+        :class="{ 'key-active': backspaceActive }"
+      >
         ←
-        <span v-if="backspaceActive"
-          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">←</span>
+        <span
+          v-if="backspaceActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center"
+          >←</span
+        >
       </div>
     </div>
 
     <!-- Ligne 2 -->
     <div class="keyboard-row flex justify-center gap-1 mb-2">
       <div
-        class="key key-grey key-special h-12 w-[60px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pl-2 justify-start text-xs uppercase">
+        class="key key-grey key-special h-12 w-[60px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pl-2 justify-start text-xs uppercase"
+      >
         Tab
       </div>
       <div
         class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
-        :class="{ 'key-active': activeKey === 'a' }">
+        :class="{ 'key-active': activeKey === 'a' }"
+      >
         a
       </div>
       <div
         class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
-        :class="{ 'key-active': activeKey === 'z' }">
+        :class="{ 'key-active': activeKey === 'z' }"
+      >
         z
       </div>
       <div
         class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
-        :class="{ 'key-active': activeKey === 'e' }">
+        :class="{ 'key-active': activeKey === 'e' }"
+      >
         e
       </div>
       <div
         class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
-        :class="{ 'key-active': activeKey === 'r' }">
+        :class="{ 'key-active': activeKey === 'r' }"
+      >
         r
       </div>
       <div
         class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
-        :class="{ 'key-active': activeKey === 't' }">
+        :class="{ 'key-active': activeKey === 't' }"
+      >
         t
       </div>
       <div
         class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
-        :class="{ 'key-active': activeKey === 'y' }">
+        :class="{ 'key-active': activeKey === 'y' }"
+      >
         y
       </div>
       <div
         class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
-        :class="{ 'key-active': activeKey === 'u' }">
+        :class="{ 'key-active': activeKey === 'u' }"
+      >
         u
       </div>
       <div
         class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
-        :class="{ 'key-active': activeKey === 'i' }">
+        :class="{ 'key-active': activeKey === 'i' }"
+      >
         i
       </div>
       <div
         class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
-        :class="{ 'key-active': activeKey === 'o' }">
+        :class="{ 'key-active': activeKey === 'o' }"
+      >
         o
       </div>
       <div
         class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
-        :class="{ 'key-active': activeKey === 'p' }">
+        :class="{ 'key-active': activeKey === 'p' }"
+      >
         p
       </div>
       <div
-        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+      >
         ^
       </div>
       <div
-        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+      >
         $
       </div>
       <div
-        class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700">
+        class="key key-grey h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700"
+      >
         *
       </div>
     </div>
@@ -840,69 +926,85 @@ onUnmounted(() => {
     <!-- Ligne 3 -->
     <div class="keyboard-row flex justify-center gap-1 mb-2">
       <div
-        class="key key-grey key-special h-12 w-[74px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-3 pl-2 justify-start text-xs uppercase">
+        class="key key-grey key-special h-12 w-[74px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-3 pl-2 justify-start text-xs uppercase"
+      >
         Verr Maj
       </div>
       <div
         class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
-        :class="{ 'key-active': activeKey === 'q' }">
+        :class="{ 'key-active': activeKey === 'q' }"
+      >
         q
       </div>
       <div
         class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
-        :class="{ 'key-active': activeKey === 's' }">
+        :class="{ 'key-active': activeKey === 's' }"
+      >
         s
       </div>
       <div
         class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
-        :class="{ 'key-active': activeKey === 'd' }">
+        :class="{ 'key-active': activeKey === 'd' }"
+      >
         d
       </div>
       <div
         class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
-        :class="{ 'key-active': activeKey === 'f' }">
+        :class="{ 'key-active': activeKey === 'f' }"
+      >
         f
       </div>
       <div
         class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
-        :class="{ 'key-active': activeKey === 'g' }">
+        :class="{ 'key-active': activeKey === 'g' }"
+      >
         g
       </div>
       <div
         class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
-        :class="{ 'key-active': activeKey === 'h' }">
+        :class="{ 'key-active': activeKey === 'h' }"
+      >
         h
       </div>
       <div
         class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
-        :class="{ 'key-active': activeKey === 'j' }">
+        :class="{ 'key-active': activeKey === 'j' }"
+      >
         j
       </div>
       <div
         class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
-        :class="{ 'key-active': activeKey === 'k' }">
+        :class="{ 'key-active': activeKey === 'k' }"
+      >
         k
       </div>
       <div
         class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
-        :class="{ 'key-active': activeKey === 'l' }">
+        :class="{ 'key-active': activeKey === 'l' }"
+      >
         l
       </div>
       <div
         class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
-        :class="{ 'key-active': activeKey === 'm' }">
+        :class="{ 'key-active': activeKey === 'm' }"
+      >
         m
       </div>
       <div
-        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+      >
         ù
       </div>
       <div
         class="key key-enter key-special h-12 w-[74px] flex items-center justify-center rounded-lg font-medium text-sm bg-blue-100 text-blue-800 border border-blue-200 pr-2 justify-end text-xs uppercase"
-        :class="{ 'key-active': enterActive }">
+        :class="{ 'key-active': enterActive }"
+      >
         Entrée
-        <span v-if="enterActive"
-          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">↵</span>
+        <span
+          v-if="enterActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center"
+          >↵</span
+        >
       </div>
     </div>
 
@@ -910,63 +1012,81 @@ onUnmounted(() => {
     <div class="keyboard-row flex justify-center gap-1 mb-2">
       <div
         class="key key-grey key-special h-12 w-[95px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-2 justify-start text-xs uppercase"
-        :class="{ 'key-active': shiftActive }">
+        :class="{ 'key-active': shiftActive }"
+      >
         Maj
-        <span v-if="shiftActive"
-          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">⇧</span>
+        <span
+          v-if="shiftActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center"
+          >⇧</span
+        >
       </div>
       <div
         class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
-        :class="{ 'key-active': activeKey === 'w' }">
+        :class="{ 'key-active': activeKey === 'w' }"
+      >
         w
       </div>
       <div
         class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
-        :class="{ 'key-active': activeKey === 'x' }">
+        :class="{ 'key-active': activeKey === 'x' }"
+      >
         x
       </div>
       <div
         class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
-        :class="{ 'key-active': activeKey === 'c' }">
+        :class="{ 'key-active': activeKey === 'c' }"
+      >
         c
       </div>
       <div
         class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
-        :class="{ 'key-active': activeKey === 'v' }">
+        :class="{ 'key-active': activeKey === 'v' }"
+      >
         v
       </div>
       <div
         class="key key-mint h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-teal-100 text-teal-800 border border-teal-200"
-        :class="{ 'key-active': activeKey === 'b' }">
+        :class="{ 'key-active': activeKey === 'b' }"
+      >
         b
       </div>
       <div
         class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
-        :class="{ 'key-active': activeKey === 'n' }">
+        :class="{ 'key-active': activeKey === 'n' }"
+      >
         n
       </div>
       <div
-        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200">
+        class="key key-yellow h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-amber-100 text-amber-800 border border-amber-200"
+      >
         ,
       </div>
       <div
-        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200">
+        class="key key-pink h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-pink-100 text-pink-800 border border-pink-200"
+      >
         ;
       </div>
       <div
-        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200">
+        class="key key-green h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-green-100 text-green-800 border border-green-200"
+      >
         :
       </div>
       <div
-        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200">
+        class="key key-indigo h-12 w-12 flex items-center justify-center rounded-lg font-medium text-sm bg-indigo-100 text-indigo-800 border border-indigo-200"
+      >
         !
       </div>
       <div
         class="key key-grey key-special h-12 w-[95px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 px-2 justify-start text-xs uppercase"
-        :class="{ 'key-active': shiftActive }">
+        :class="{ 'key-active': shiftActive }"
+      >
         Maj
-        <span v-if="shiftActive"
-          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">⇧</span>
+        <span
+          v-if="shiftActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center"
+          >⇧</span
+        >
       </div>
     </div>
 
@@ -974,10 +1094,14 @@ onUnmounted(() => {
     <div class="keyboard-row flex justify-center gap-1">
       <div
         class="key key-grey key-special h-12 w-[220px] flex items-center justify-center rounded-lg font-medium text-sm bg-gray-300 text-gray-700 pl-2 pr-4 justify-start text-xs uppercase"
-        :class="{ 'key-active': spaceActive }">
+        :class="{ 'key-active': spaceActive }"
+      >
         Espace
-        <span v-if="spaceActive"
-          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">␣</span>
+        <span
+          v-if="spaceActive"
+          class="finger-indicator absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center"
+          >␣</span
+        >
       </div>
     </div>
   </div>
@@ -1222,11 +1346,17 @@ onUnmounted(() => {
   animation: key-press-pop 0.18s cubic-bezier(0.4, 0.8, 0.2, 1);
   background-color: #3b82f6 !important; /* Bleu vif */
   color: #fff !important;
-  box-shadow: 0 0 16px 4px rgba(59, 130, 246, 0.35), 0 2px 8px rgba(0,0,0,0.12);
+  box-shadow:
+    0 0 16px 4px rgba(59, 130, 246, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.12);
   transform: scale(1.08);
   z-index: 2;
   border: 2px solid #2563eb;
-  transition: background 0.1s, color 0.1s, box-shadow 0.1s, transform 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s,
+    box-shadow 0.1s,
+    transform 0.1s;
 }
 
 @keyframes key-press-pop {
