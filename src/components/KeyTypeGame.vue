@@ -574,7 +574,7 @@ onUnmounted(() => {
 
       <!-- Carte compte à rebours automatique -->
       <div
-        class="bg-purple-50 p-3 rounded-lg text-center transition-all duration-300 border border-purple-200"
+        class="bg-purple-50 p-3 shadow-lg hover:shadow-xl transition-shadow rounded-lg text-center transition-all duration-300 border border-purple-200"
         :class="{
           'bg-red-100 border-red-200': countdown <= 10,
           'animate-pulse': countdown <= 5,
